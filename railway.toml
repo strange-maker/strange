@@ -1,0 +1,15 @@
+# API service config. Railway service Config File path: /railway.toml
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+watchPatterns = ["backend/**", "public/sources.yaml", "railway.toml"]
+
+[deploy]
+preDeployCommand = ["alembic -c alembic.ini upgrade head"]
+startCommand = "sh -c 'exec uvicorn api:app --host 0.0.0.0 --port \"$PORT\" --proxy-headers --forwarded-allow-ips=\"${FORWARDED_ALLOW_IPS:-*}\"'"
+healthcheckPath = "/health/ready"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+overlapSeconds = "20"
+drainingSeconds = "30"
