@@ -10,5 +10,5 @@ watchPatterns = ["backend/**", "public/sources.yaml", "railway.scheduler.toml"]
 startCommand = "celery -A celery_app.celery beat --loglevel=INFO"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-overlapSeconds = "0"
-drainingSeconds = "30"
+overlapSeconds = 0
+drainingSeconds = 30
