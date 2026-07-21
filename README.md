@@ -13,6 +13,7 @@
 - 公众号只允许手动导入并固定标记 `wechat_manual / low`；普通网页也支持人工导入，默认作为低可信媒体线索。
 - 前端只读取认证后的 API，不回退到静态资讯或伪造时间、数量和成功率。
 
+
 ## 生产架构
 
 ```mermaid
@@ -37,6 +38,7 @@ flowchart LR
 前端公开并不等于数据会自动更新；Worker、Scheduler、PostgreSQL 和 Redis 必须持续在线。
 
 ## 使用 Docker Compose 启动完整栈
+
 
 需要 Docker 24+ 与 Compose v2。
 
