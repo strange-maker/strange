@@ -5,6 +5,9 @@ type Tokens = { access_token: string; refresh_token: string; user: SessionUser }
 
 const ACCESS = "sales-intel-access";
 const REFRESH = "sales-intel-refresh";
+export const AUTH_EXPIRED_EVENT = "sales-intel-auth-expired";
+
+let refreshInFlight: Promise<boolean> | null = null;
 
 export function hasSession() { return typeof window !== "undefined" && Boolean(sessionStorage.getItem(REFRESH)); }
 export function clearSession() { if (typeof window !== "undefined") { sessionStorage.removeItem(ACCESS); sessionStorage.removeItem(REFRESH); } }
@@ -17,11 +20,23 @@ export async function login(email: string, password: string): Promise<SessionUse
   const tokens: Tokens = await response.json(); save(tokens); return tokens.user;
 }
 
-async function refreshAccess(): Promise<boolean> {
+async function performRefresh(): Promise<boolean> {
   const refresh_token = sessionStorage.getItem(REFRESH); if (!refresh_token) return false;
   const response = await fetch(`${API_BASE}/api/auth/refresh`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token }) });
-  if (!response.ok) { clearSession(); return false; }
+  if (!response.ok) return false;
   save(await response.json()); return true;
+}
+
+function refreshAccess(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight=performRefresh().finally(()=>{refreshInFlight=null});
+  }
+  return refreshInFlight;
+}
+
+function expireSession() {
+  clearSession();
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
 }
 
 export async function api<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
@@ -30,6 +45,7 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   const token = sessionStorage.getItem(ACCESS); if (token) headers.set("Authorization", `Bearer ${token}`);
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (response.status === 401 && retry && await refreshAccess()) return api<T>(path, init, false);
+  if (response.status === 401) { expireSession(); throw new Error("登录已失效，请重新登录"); }
   if (!response.ok) { let message = `请求失败（${response.status}）`; try { message = (await response.json()).detail || message; } catch {} throw new Error(message); }
   if (response.status === 204) return undefined as T;
   return response.json();
@@ -37,5 +53,5 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
 
 export async function logout() {
   const refresh_token = sessionStorage.getItem(REFRESH);
-  try { if (refresh_token) await api("/api/auth/logout", { method: "POST", body: JSON.stringify({ refresh_token }) }); } finally { clearSession(); }
+  try { if (refresh_token) await api("/api/auth/logout", { method: "POST", body: JSON.stringify({ refresh_token }) }); } catch {} finally { clearSession(); }
 }

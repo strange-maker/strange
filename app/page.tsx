@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { API_BASE, api, clearSession, hasSession, login, logout, type SessionUser } from "./api-client";
+import { API_BASE, AUTH_EXPIRED_EVENT, api, clearSession, hasSession, login, logout, type SessionUser } from "./api-client";
 
 type Article = {
   id: string; title: string; original_title: string; summary: string; sales_insight: string; original_url: string;
@@ -97,6 +97,7 @@ function ImportModal({sources,onClose,onDone}:{sources:Source[];onClose:()=>void
 export default function Home() {
   const [user,setUser]=useState<SessionUser|null>(null); const [authLoading,setAuthLoading]=useState(true); const [view,setView]=useState("dashboard"); const [filter,setFilter]=useState(""); const [articles,setArticles]=useState<Article[]>([]); const [sources,setSources]=useState<Source[]>([]); const [status,setStatus]=useState<Status|null>(null); const [stats,setStats]=useState<Stats|null>(null); const [loading,setLoading]=useState(false); const [detail,setDetail]=useState<Article|null>(null); const [importing,setImporting]=useState(false); const [error,setError]=useState("");
   const load=useCallback(async(q="",level="")=>{if(!user)return;setLoading(true);setError("");try{const params=new URLSearchParams({limit:"100"});if(q)params.set("q",q);if(level)params.set("reliability",level);const [feed,sourceList,health,statistics]=await Promise.all([api<{items:Article[]}>(`/api/articles?${params}`),api<Source[]>("/api/sources"),api<Status>("/api/dashboard/status"),api<Stats>("/api/stats")]);setArticles(feed.items);setSources(sourceList);setStatus(health);setStats(statistics)}catch(e){setError(e instanceof Error?e.message:"数据加载失败")}finally{setLoading(false)}},[user]);
+  useEffect(()=>{const expired=()=>{setUser(null);setError("");setDetail(null);setImporting(false)};window.addEventListener(AUTH_EXPIRED_EVENT,expired);return()=>window.removeEventListener(AUTH_EXPIRED_EVENT,expired)},[]);
   useEffect(()=>{(async()=>{if(!hasSession()){setAuthLoading(false);return}try{setUser(await api<SessionUser>("/api/auth/me"))}catch{clearSession()}finally{setAuthLoading(false)}})()},[]);
   useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load]);
   const navigate=(next:string,f="")=>{setView(next);setFilter(f);window.scrollTo({top:0,behavior:"smooth"})}; const open=async(a:Article)=>{try{setDetail(await api<Article>(`/api/articles/${a.id}`))}catch{setDetail(a)}if(!a.read&&ROLE_LEVEL[user!.role]>=2){try{await api(`/api/articles/${a.id}/read`,{method:"PUT"});setArticles(xs=>xs.map(x=>x.id===a.id?{...x,read:true}:x))}catch{}}};
