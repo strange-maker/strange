@@ -25,9 +25,11 @@ def crawl_source(self,source_id: str,job_id: str | None=None):
     with SessionLocal() as db:
         source=db.get(Source,source_id); job=db.get(CrawlJob,job_id) if job_id else None
         if not source:
+            if job: job.status="failed"; db.commit()
             logger.warning("crawl source missing source_id=%s",source_id)
             return {"status":"missing"}
         if not source.enabled or source.crawl_method == "manual_import" or source.source_type == "wechat_manual" or source.adapter_status != "active":
+            if job: job.status="failed"; db.commit()
             logger.warning("crawl source not runnable source=%s status=%s method=%s",source.source_name,source.adapter_status,source.crawl_method)
             return {"status":"not_runnable"}
         domain=urlparse(source.source_url).netloc

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from difflib import SequenceMatcher
 
-from sqlalchemy import select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
 from adapters.base import SourceItem, canonicalize_url, content_digest
@@ -15,33 +15,30 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
     canonical=canonicalize_url(item.url)
     existing=db.scalar(select(Article).where(Article.canonical_url == canonical))
     if existing:
-        existing.last_seen_at=utcnow(); existing.cross_source_count=max(existing.cross_source_count, 1)
-        _attach_source(db, existing, source, item)
+        existing.last_seen_at=utcnow(); _attach_source(db,existing,source,item,_is_first_party(source)); _promote_primary(existing,source,item)
         return "updated"
 
     digest=content_digest(item.title,item.excerpt)
     exact=db.scalar(select(Article).where(Article.content_hash == digest))
     if exact:
-        _duplicate(db,exact,item,"content_hash",1.0); _attach_source(db,exact,source,item)
-        exact.cross_source_count += 1
-        if source.reliability_level == "high" and exact.reliability_level != "high":
-            exact.primary_source_id=source.id; exact.source_name=source.source_name; exact.source_type=source.source_type; exact.reliability_level="high"; exact.original_url=item.url; exact.is_primary_source=True
+        _duplicate(db,exact,item,"content_hash",1.0); _attach_source(db,exact,source,item,_is_first_party(source)); _promote_primary(exact,source,item)
         return "duplicate"
 
     recent=db.scalars(select(Article).where(Article.published_at >= (item.published_at or utcnow()) - timedelta(days=7)).limit(100)).all()
     for candidate in recent:
         similarity=SequenceMatcher(None,candidate.title.lower(),item.title.lower()).ratio()
         if similarity >= .92:
-            _duplicate(db,candidate,item,"title_similarity",similarity); _attach_source(db,candidate,source,item); candidate.cross_source_count += 1
+            _duplicate(db,candidate,item,"title_similarity",similarity); _attach_source(db,candidate,source,item,_is_first_party(source)); _promote_primary(candidate,source,item)
             return "duplicate"
 
-    text=f"{item.title}\n{item.excerpt}"; overseas=detect_overseas(item.title,item.excerpt)
+    source_context=" ".join([source.source_name,*(source.country_focus or []),*(source.region_focus or [])])
+    text=f"{item.title}\n{item.excerpt}"; overseas=detect_overseas(item.title,f"{item.excerpt}\n来源范围：{source_context}")
     if not overseas["is_overseas"]:
         if not is_manual: return "skipped"
         overseas={"is_overseas":True,"country":None,"region":None,"overseas_confidence":.2,"overseas_evidence":["用户手动导入，海外属性待人工核验"]}
     kas,matched,ka_conf=detect_ka(item.title,item.excerpt,source.source_name)
-    products=product_opportunities(None,text)
-    first_party=source.source_type in {"official","procurement","stock_disclosure","policy","chamber"}
+    products=product_opportunities(" ".join(source.industry_focus or []),text)
+    first_party=_is_first_party(source)
     article=Article(
         title=item.title, original_title=item.title, summary=rule_summary(item.excerpt or item.title),
         sales_insight="待销售团队基于已核验事实评估产品机会。" if first_party else "媒体线索，建议核验官方公告。",
@@ -61,7 +58,21 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
 
 def _attach_source(db: Session, article: Article, source: Source, item: SourceItem, is_primary: bool=False) -> None:
     exists=db.scalar(select(ArticleSource).where(ArticleSource.article_id == article.id,ArticleSource.original_url == item.url))
-    if not exists: db.add(ArticleSource(article_id=article.id,source_id=source.id,original_url=item.url,title=item.title,published_at=item.published_at,reliability_level=source.reliability_level,is_primary=is_primary))
+    if not exists:
+        db.add(ArticleSource(article_id=article.id,source_id=source.id,original_url=item.url,title=item.title,published_at=item.published_at,reliability_level=source.reliability_level,is_primary=is_primary)); db.flush()
+    article.cross_source_count=max(1,db.scalar(select(func.count(distinct(ArticleSource.source_id))).where(ArticleSource.article_id == article.id)) or 1)
+
+
+def _is_first_party(source: Source) -> bool:
+    return source.source_type in {"official","procurement","stock_disclosure","policy","chamber","competitor"}
+
+
+def _promote_primary(article: Article, source: Source, item: SourceItem) -> None:
+    if not _is_first_party(source) or (article.reliability_level == "high" and article.is_primary_source): return
+    article.primary_source_id=source.id; article.source_name=source.source_name; article.source_type=source.source_type
+    article.reliability_level="high"; article.original_url=item.url; article.is_primary_source=True
+    article.verification_status="source_verified"
+    article.sales_insight="已获得高可信来源支撑，建议销售团队核验项目时效并评估产品机会。"
 
 
 def _duplicate(db: Session, article: Article, item: SourceItem, method: str, score: float) -> None:
