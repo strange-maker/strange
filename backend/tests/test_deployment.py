@@ -3,12 +3,13 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
+import api as api_module
 from api import app
 from celery_app import celery
 from cli import bootstrap_admin
 from config import get_settings,normalize_database_url
 from database import SessionLocal,get_db
-from models import AuditLog,Role,Source,User
+from models import AuditLog,CrawlJob,Role,Source,User
 from tasks import crawl_source
 
 
@@ -80,9 +81,33 @@ def test_celery_uses_redis_and_utc_and_manual_sources_are_not_runnable():
     assert celery.conf.enable_utc is True
     assert celery.conf.timezone == "UTC"
     assert celery.conf.broker_url.startswith("redis://")
+    assert crawl_source.app is celery
+    assert crawl_source.app.connection_for_write().as_uri().startswith("redis://")
     with SessionLocal() as db:
         manual=db.scalar(select(Source).where(Source.crawl_method == "manual_import"))
         assert manual and crawl_source.run(manual.id)["status"] == "not_runnable"
+
+
+def test_manual_crawl_is_sent_through_configured_celery_app(client,admin_headers,monkeypatch):
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.enabled.is_(True),Source.adapter_status == "active"))
+        assert source
+        source_id=source.id
+
+    sent={}
+
+    def fake_send_task(name,args):
+        sent["name"]=name
+        sent["args"]=args
+        return SimpleNamespace(id="celery-test-task")
+
+    monkeypatch.setattr(api_module.celery,"send_task",fake_send_task)
+    response=client.post(f"/api/sources/{source_id}/run",headers=admin_headers)
+    assert response.status_code == 202
+    assert sent == {"name":"tasks.crawl_source","args":[source_id,response.json()["job_id"]]}
+    with SessionLocal() as db:
+        job=db.get(CrawlJob,response.json()["job_id"])
+        assert job and job.status == "queued" and job.celery_task_id == "celery-test-task"
 
 
 def test_first_admin_bootstrap_is_one_time_and_audited(capsys):
