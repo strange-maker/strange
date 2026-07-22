@@ -11,6 +11,7 @@ from sqlalchemy import String, and_, distinct, func, or_, select, text
 from sqlalchemy.orm import Session
 
 from adapters.base import SourceItem
+from celery_app import celery
 from config import get_settings
 from database import SessionLocal, engine, get_db
 from ingestion import ingest_item
@@ -196,8 +197,7 @@ def run_source(source_id: str,request: Request,user: User=Depends(require_role("
     if not source or source.adapter_status != "active" or not source.enabled: raise HTTPException(400,"source is not runnable")
     job=CrawlJob(source_id=source.id,requested_by=user.id,trigger_type="manual",status="queued"); db.add(job); db.commit(); db.refresh(job)
     try:
-        from tasks import crawl_source
-        task=crawl_source.delay(source.id,job.id); job.celery_task_id=task.id; db.commit()
+        task=celery.send_task("tasks.crawl_source",args=[source.id,job.id]); job.celery_task_id=task.id; db.commit()
     except Exception as exc:
         job.status="queue_failed"; db.commit(); raise HTTPException(503,f"worker queue unavailable: {exc}")
     audit(db,request,user,"crawl.run","source",source.id,{"job_id":job.id}); return {"job_id":job.id,"status":"queued"}

@@ -3,13 +3,13 @@ from __future__ import annotations
 import time
 from urllib.parse import urlparse
 
-from celery import shared_task
 from celery.utils.log import get_task_logger
 from redis import Redis
 from redis.exceptions import LockError
 from sqlalchemy import select
 
 from config import get_settings
+from celery_app import celery
 from crawl_service import execute_crawl
 from database import SessionLocal
 from models import CrawlJob, Source, utcnow
@@ -19,7 +19,7 @@ redis_client=Redis.from_url(settings.redis_url,decode_responses=True)
 logger=get_task_logger(__name__)
 
 
-@shared_task(bind=True,max_retries=4,name="tasks.crawl_source")
+@celery.task(bind=True,max_retries=4,name="tasks.crawl_source")
 def crawl_source(self,source_id: str,job_id: str | None=None):
     logger.info("crawl task received source_id=%s job_id=%s retry=%s",source_id,job_id,self.request.retries)
     with SessionLocal() as db:
@@ -50,7 +50,7 @@ def crawl_source(self,source_id: str,job_id: str | None=None):
                 logger.warning("domain lock expired before release domain=%s",domain)
 
 
-@shared_task(name="tasks.dispatch_due_sources")
+@celery.task(name="tasks.dispatch_due_sources")
 def dispatch_due_sources():
     """Dispatch due automatic sources once, even if two Beat processes briefly overlap."""
     singleton=redis_client.lock("scheduler:dispatch-due-sources",timeout=55,blocking_timeout=0)
