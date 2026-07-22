@@ -85,7 +85,10 @@ def test_celery_uses_redis_and_utc_and_manual_sources_are_not_runnable():
     assert crawl_source.app.connection_for_write().as_uri().startswith("redis://")
     with SessionLocal() as db:
         manual=db.scalar(select(Source).where(Source.crawl_method == "manual_import"))
-        assert manual and crawl_source.run(manual.id)["status"] == "not_runnable"
+        assert manual
+        job=CrawlJob(source_id=manual.id,status="queued"); db.add(job); db.commit()
+        assert crawl_source.run(manual.id,job.id)["status"] == "not_runnable"
+        db.expire_all(); assert db.get(CrawlJob,job.id).status == "failed"
 
 
 def test_manual_crawl_is_sent_through_configured_celery_app(client,admin_headers,monkeypatch):
