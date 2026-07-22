@@ -27,5 +27,7 @@ test("frontend uses authenticated API data and no static article fallback", asyn
   assert.match(page, /api<Source\[\]>/);
   assert.doesNotMatch(page, /ARTICLES|COUNTRY_STATS|sources\.yaml/);
   assert.match(client, /\/api\/auth\/refresh/);
+  assert.match(client, /refreshInFlight/);
+  assert.match(client, /AUTH_EXPIRED_EVENT/);
   assert.match(layout, /海外销售情报工作台/);
 });
