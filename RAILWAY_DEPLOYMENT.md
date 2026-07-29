@@ -199,6 +199,8 @@ alembic -c alembic.ini upgrade head
 
 Alembic 只执行尚未应用的 revision；重启或再次执行 `upgrade head` 不会清空表或重载演示数据。生产启动也不会调用 `create_all`，`SEED_DEMO_DATA=true` 会直接拒绝启动。
 
+当前年度情报平台包含 `0001_initial` 与 `0002_year_intelligence_platform`。`0002` 会先检查既有表、列和索引，兼容已有生产库升级与空库直接升级到 head，不会删除或重建资讯表。升级前仍建议在 Railway PostgreSQL 创建备份或快照。
+
 首次部署或排障时，可安装 Railway CLI，登录并链接项目，然后连接 API 容器：
 
 ```powershell
@@ -256,6 +258,16 @@ NEXT_PUBLIC_API_BASE_URL=https://<API生成域名>
 
 变量值不要带末尾 `/`。保存后必须重新构建/部署前端，因为 `NEXT_PUBLIC_*` 在构建时嵌入浏览器包。
 
+Cloudflare Pages 使用以下构建设置：
+
+```text
+Build command: npm run build:cloudflare
+Build output directory: out
+Root directory: /
+```
+
+仓库中的 `npm run build` 是 Codex Sites/vinext 的独立构建命令，Cloudflare Pages 不应改用该命令。
+
 同时回到三个 Railway 应用服务，确保：
 
 ```dotenv
@@ -296,17 +308,32 @@ Invoke-RestMethod -Uri "https://<API域名>/api/sources" -Headers @{ Authorizati
 
 1. 打开 Worker Deploy Logs，确认出现 `ready`。
 2. 打开 Scheduler Deploy Logs，确认 Beat 已启动，并每分钟发送 `tasks.dispatch_due_sources`。
-3. 在数据源管理页选择一个 `active` 且 `enabled` 的来源，点击单源抓取。
-4. API 返回 HTTP 202 和 `job_id`。
-5. Worker 日志依次出现 `crawl task received` 与 `crawl run finished`。
-6. 数据源运行记录出现 `success`、`failed` 或重试状态，并带抓取条数/失败原因。
-7. 选择公众号 `manual_only` 来源，确认没有自动抓取入口；只通过“手动导入”录入。
+3. 管理员在数据源管理页点击顶部“一键抓取全部可运行来源”，确认后创建批次。
+4. API 返回 HTTP 202 和批次对象；同一时间重复提交应返回 HTTP 409。
+5. 在“抓取批次”查看总数、完成、成功、空结果、失败、跳过、新增、更新和去重计数。
+6. Worker 日志出现 `tasks.crawl_source` 接收和完成；待重试任务不会被提前计入最终失败。
+7. 取消批次只撤销尚未执行的任务，正在执行的来源会安全结束。
+8. 公众号 `manual_only`、禁用、暂停、受限和待适配来源应被跳过，不能自动抓取。
 
 也可在 Worker 容器内验证 broker 连接和 Worker 响应：
 
 ```bash
 celery -A celery_app.celery inspect ping
 ```
+
+### 12.4 最近一年回填与来源能力
+
+“历史回填”仅对管理员开放，支持创建、暂停、继续、重试和取消。每个任务保存分页游标与检查点；缺少可核验发布日期的内容只计入 `date_unverified_count`，不会进入最近 365 天统计。
+
+真实来源能力审计命令：
+
+```powershell
+cd backend
+$env:CRAWL_USER_AGENT="Schneider-Sales-Intelligence/1.0 contact=<合规邮箱>"
+.\.venv\Scripts\python.exe -B source_capability_check.py --timeout 8 --workers 4
+```
+
+结果写入 `docs/source-expansion-report.md` 和 `docs/source-expansion-report.json`。只有适配器实际返回非零真实条目才标记为 `adapter_working`；登录、付费墙、证书、JavaScript、robots 或解析失败会保留真实失败原因。
 
 ## 13. 常见故障排查
 
@@ -370,3 +397,5 @@ celery -A celery_app.celery inspect ping
 首次上线：Postgres → Redis → API（迁移成功）→ 创建管理员 → Worker → Scheduler → 生成/确认 API 域名 → 设置前端 `NEXT_PUBLIC_API_BASE_URL` → 重建前端 → 完整验证。
 
 后续仅代码更新可使用 GitHub 自动部署。含数据库 schema 变更时，先完成 API 的 pre-deploy migration，再让 Worker/Scheduler 使用新版本；Scheduler 始终保持单副本。
+
+本次年度情报平台建议顺序：确认 PostgreSQL 备份 → 部署 API 并完成 `0002` → 验证 `/health/ready` → 部署 Worker → 如资源允许再部署单实例 Scheduler → 创建一次全量抓取批次 → 在 Cloudflare Pages 设置 API 地址并重新构建前端。
