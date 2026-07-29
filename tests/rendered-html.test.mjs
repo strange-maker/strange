@@ -31,3 +31,27 @@ test("frontend uses authenticated API data and no static article fallback", asyn
   assert.match(client, /AUTH_EXPIRED_EVENT/);
   assert.match(layout, /海外销售情报工作台/);
 });
+
+test("country chart is horizontal, clickable, and routes to the merged opportunity page", async () => {
+  const [page, css, countryRedirect, regionRedirect] = await Promise.all([
+    readFile(new URL("app/page.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
+    readFile(new URL("app/country/page.tsx", root), "utf8"),
+    readFile(new URL("app/region/page.tsx", root), "utf8"),
+  ]);
+  assert.match(page, /className="horizontal-chart"/);
+  assert.match(page, /onClick=\{\(\)=>onCountry\(x\.name\)\}/);
+  assert.match(page, /国家与区域机会/);
+  assert.match(css, /\.horizontal-chart button\{[^}]*grid-template-columns/);
+  assert.match(countryRedirect, /view=opportunities&dimension=country/);
+  assert.match(regionRedirect, /view=opportunities&dimension=region/);
+});
+
+test("source management uses one admin batch action and no row-level crawl button", async () => {
+  const page = await readFile(new URL("app/page.tsx", root), "utf8");
+  assert.match(page, /一键抓取全部可运行来源/);
+  assert.match(page, /\/api\/admin\/crawl-batches/);
+  assert.match(page, /同一时间只允许一个全量批次/);
+  assert.doesNotMatch(page, /\/api\/sources\/\$\{s\.id\}\/run/);
+  assert.doesNotMatch(page, />立即抓取</);
+});
