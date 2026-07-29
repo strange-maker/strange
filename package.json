@@ -10,7 +10,7 @@
     "build": "node scripts/vinext-sites-build.mjs",
     "build:cloudflare": "next build",
     "start": "vinext start",
-    "test": "next build && node --test tests/rendered-html.test.mjs && node --experimental-strip-types --test tests/api-client-auth.test.mjs",
+    "test": "node scripts/vinext-sites-build.mjs && next build && node --test tests/rendered-html.test.mjs && node --experimental-strip-types --test tests/api-client-auth.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
