@@ -1,0 +1,11 @@
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/country
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/region
+  Cache-Control: no-cache, no-store, must-revalidate
