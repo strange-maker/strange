@@ -17,7 +17,9 @@ test("server renders the production application shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /海外销售情报工作台/);
-  assert.match(html, /正在连接安全工作台/);
+  assert.match(html, /登录工作台/);
+  assert.doesNotMatch(html, /正在连接安全工作台/);
+  assert.match(html, /前端版本：连接保护 v2/);
   assert.doesNotMatch(html, /Codex is working|Your site is taking shape/);
 });
 
@@ -29,6 +31,10 @@ test("frontend uses authenticated API data and no static article fallback", asyn
   assert.match(client, /\/api\/auth\/refresh/);
   assert.match(client, /refreshInFlight/);
   assert.match(client, /AUTH_EXPIRED_EVENT/);
+  assert.match(client, /API_TIMEOUT_MS/);
+  assert.match(client, /API_BASE_VALID/);
+  assert.doesNotMatch(page, /正在连接安全工作台/);
+  assert.match(page, /连接保护 v2/);
   assert.match(layout, /海外销售情报工作台/);
 });
 
