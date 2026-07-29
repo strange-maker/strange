@@ -49,6 +49,8 @@ class ManualImport(BaseModel):
 class SourceUpdate(BaseModel):
     enabled: bool | None = None
     schedule_minutes: int | None = Field(default=None, ge=15, le=10080)
+    backfill_enabled: bool | None = None
+    backfill_page_limit: int | None = Field(default=None, ge=1, le=500)
 
 
 class SavedSearchCreate(BaseModel):
@@ -59,3 +61,14 @@ class SavedSearchCreate(BaseModel):
 class ReviewRequest(BaseModel):
     action: Literal["approve", "reject", "needs_changes"]
     notes: str = Field(default="", max_length=2000)
+
+
+class CrawlBatchCreate(BaseModel):
+    source_ids: list[str] | None = None
+
+
+class BackfillCreate(BaseModel):
+    source_id: str
+    date_from: datetime
+    date_to: datetime
+    page_limit: int = Field(default=25, ge=1, le=500)

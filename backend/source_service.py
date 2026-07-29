@@ -8,7 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from adapters.registry import ADAPTER_CONFIGS
-from models import Role, Source, utcnow
+from intelligence import KA_MAPPINGS, STRONG_ALIASES, WEAK_ALIASES
+from models import KAAlias, KAEntity, KAGroup, Role, Source, utcnow
 
 SOURCES_PATH = Path(__file__).resolve().parents[1] / "public" / "sources.yaml"
 
@@ -53,15 +54,20 @@ def sync_sources(db: Session) -> int:
             "adapter_status":adapter_status_for(item), "adapter_config":{k:v for k,v in definition.items() if k not in {"class","schedule_minutes","initial_status"}},
             "schedule_minutes":definition.get("schedule_minutes", schedule_for(item)),
             "enabled":bool(item["enabled"] and adapter_status_for(item) in {"active","manual_only"}), "notes":item["notes"],
+            "backfill_enabled":bool(definition and item["crawl_method"] != "manual_import" and definition.get("initial_status", "active") == "active"),
+            "backfill_page_limit":int(definition.get("backfill_page_limit", definition.get("max_pages", 25))) if definition else 25,
         }
         if source:
             persisted_enabled=source.enabled
             persisted_schedule=source.schedule_minutes
             paused=source.adapter_status == "paused" and source.consecutive_failures >= 5 and values["adapter_status"] == "active"
             for key,value in values.items():
-                if key not in {"enabled","schedule_minutes","adapter_status"}: setattr(source,key,value)
+                if key not in {"enabled","schedule_minutes","adapter_status","backfill_enabled","backfill_page_limit"}: setattr(source,key,value)
             source.enabled=persisted_enabled
             source.schedule_minutes=persisted_schedule or values["schedule_minutes"]
+            if source.backfill_status == "not_started":
+                source.backfill_enabled=values["backfill_enabled"]
+                source.backfill_page_limit=values["backfill_page_limit"]
             source.adapter_status="paused" if paused else values["adapter_status"]
             if source.adapter_status == "active" and source.enabled and source.next_run_at is None: source.next_run_at=utcnow()
             if source.adapter_status not in {"active","paused"}: source.next_run_at=None
@@ -76,6 +82,27 @@ def ensure_roles(db: Session) -> None:
     for name,description in descriptions.items():
         if not db.scalar(select(Role).where(Role.name == name)): db.add(Role(name=name,description=description))
     db.commit()
+
+
+def sync_ka_mappings(db: Session) -> int:
+    count=0
+    for mapping in KA_MAPPINGS:
+        group=db.scalar(select(KAGroup).where(KAGroup.name == mapping["ka_group"]))
+        if not group:
+            group=KAGroup(name=mapping["ka_group"],ka_type=mapping.get("ka_type","EPC KA"))
+            db.add(group); db.flush()
+        for entity_name in mapping["entities"]:
+            entity=db.scalar(select(KAEntity).where(KAEntity.ka_group_id == group.id,KAEntity.name == entity_name))
+            if not entity:
+                entity=KAEntity(ka_group_id=group.id,name=entity_name,entity_relation="business_mapping",is_verified_relation=False)
+                db.add(entity)
+            alias=db.scalar(select(KAAlias).where(KAAlias.ka_group_id == group.id,KAAlias.alias == entity_name))
+            if not alias:
+                strength="weak" if entity_name in WEAK_ALIASES else ("strong" if entity_name in STRONG_ALIASES or len(entity_name) >= 6 else "medium")
+                db.add(KAAlias(ka_group_id=group.id,alias=entity_name,is_ambiguous=entity_name == "中国电工",alias_strength=strength,entity_relation="business_mapping"))
+            count += 1
+    db.commit()
+    return count
 
 
 def next_run(source: Source):

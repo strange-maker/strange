@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -87,6 +87,8 @@ class KAAlias(Base):
     ka_group_id: Mapped[str] = mapped_column(ForeignKey("ka_groups.id", ondelete="CASCADE"), index=True)
     alias: Mapped[str] = mapped_column(String(200), index=True)
     is_ambiguous: Mapped[bool] = mapped_column(Boolean, default=False)
+    alias_strength: Mapped[str] = mapped_column(String(20), default="medium", index=True)
+    entity_relation: Mapped[str] = mapped_column(String(30), default="alias")
     __table_args__ = (UniqueConstraint("ka_group_id", "alias"),)
 
 
@@ -112,6 +114,13 @@ class Source(Base):
     last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_failure_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    backfill_enabled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    backfill_start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    backfill_end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    backfill_page_limit: Mapped[int] = mapped_column(Integer, default=25)
+    backfill_status: Mapped[str] = mapped_column(String(30), default="not_started", index=True)
+    backfill_cursor: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    last_backfill_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -181,6 +190,11 @@ class Article(Base):
     ka: Mapped[list] = mapped_column(JSON, default=list)
     subsidiary: Mapped[list] = mapped_column(JSON, default=list)
     industries: Mapped[list] = mapped_column(JSON, default=list)
+    intelligence_types: Mapped[list] = mapped_column(JSON, default=list)
+    matched_entities: Mapped[list] = mapped_column(JSON, default=list)
+    ka_candidates: Mapped[list] = mapped_column(JSON, default=list)
+    date_verification_status: Mapped[str] = mapped_column(String(30), default="verified", index=True)
+    canonical_event_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     project_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     project_stage: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     project_value: Mapped[float | None] = mapped_column(Numeric(20, 2), nullable=True)
@@ -214,6 +228,8 @@ class ArticleSource(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     reliability_level: Mapped[str] = mapped_column(String(20))
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    source_role: Mapped[str] = mapped_column(String(30), default="supplemental", index=True)
+    consistency_status: Mapped[str] = mapped_column(String(30), default="unknown")
     __table_args__ = (UniqueConstraint("article_id", "original_url"),)
 
 
@@ -298,3 +314,227 @@ class ReviewRecord(Base):
     before_data: Mapped[dict] = mapped_column(JSON, default=dict)
     after_data: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CanonicalProject(Base):
+    __tablename__ = "canonical_projects"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    project_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(500), default="")
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    region: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    industries: Mapped[list] = mapped_column(JSON, default=list)
+    intelligence_types: Mapped[list] = mapped_column(JSON, default=list)
+    project_stage: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    project_value: Mapped[float | None] = mapped_column(Numeric(20, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    first_event_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_event_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    event_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class CanonicalEvent(Base):
+    __tablename__ = "canonical_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    event_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    canonical_project_id: Mapped[str | None] = mapped_column(ForeignKey("canonical_projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    primary_article_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(500))
+    project_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    company_name: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    matched_entities: Mapped[list] = mapped_column(JSON, default=list)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    region: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    owner: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    epc: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    event_type: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    intelligence_types: Mapped[list] = mapped_column(JSON, default=list)
+    project_value: Mapped[float | None] = mapped_column(Numeric(20, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    source_count: Mapped[int] = mapped_column(Integer, default=1)
+    official_source_count: Mapped[int] = mapped_column(Integer, default=0)
+    verification_status: Mapped[str] = mapped_column(String(30), default="unverified", index=True)
+    conflict_status: Mapped[str] = mapped_column(String(30), default="unknown", index=True)
+    confidence_score: Mapped[float] = mapped_column(Float, default=0.5)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class EventSource(Base):
+    __tablename__ = "event_sources"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    canonical_event_id: Mapped[str] = mapped_column(ForeignKey("canonical_events.id", ondelete="CASCADE"), index=True)
+    article_id: Mapped[str] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
+    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"), index=True)
+    article_source_id: Mapped[str | None] = mapped_column(ForeignKey("article_sources.id", ondelete="SET NULL"), nullable=True)
+    source_role: Mapped[str] = mapped_column(String(30), default="supplemental", index=True)
+    consistency_status: Mapped[str] = mapped_column(String(30), default="unknown")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    __table_args__ = (UniqueConstraint("canonical_event_id", "source_id", "article_id"),)
+
+
+class PolicyIntelligence(Base):
+    __tablename__ = "policy_intelligence"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    article_id: Mapped[str] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), unique=True, index=True)
+    publishing_country: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    affected_countries: Mapped[list] = mapped_column(JSON, default=list)
+    issuing_body: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    policy_types: Mapped[list] = mapped_column(JSON, default=list)
+    applicable_industries: Mapped[list] = mapped_column(JSON, default=list)
+    effective_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expiry_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    tax_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    tax_rate_change: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    investment_threshold: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    foreign_ownership_ratio: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    localization_requirements: Mapped[str | None] = mapped_column(Text, nullable=True)
+    local_procurement_ratio: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    incentives: Mapped[str | None] = mapped_column(Text, nullable=True)
+    import_tariff: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    export_controls: Mapped[str | None] = mapped_column(Text, nullable=True)
+    technical_standards: Mapped[str | None] = mapped_column(Text, nullable=True)
+    certification_requirements: Mapped[str | None] = mapped_column(Text, nullable=True)
+    china_company_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    schneider_sales_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verification_items: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class KAEntity(Base):
+    __tablename__ = "ka_entities"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    ka_group_id: Mapped[str] = mapped_column(ForeignKey("ka_groups.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(300), index=True)
+    entity_relation: Mapped[str] = mapped_column(String(30), default="business_mapping", index=True)
+    is_verified_relation: Mapped[bool] = mapped_column(Boolean, default=False)
+    official_url: Mapped[str | None] = mapped_column(String(1200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    __table_args__ = (UniqueConstraint("ka_group_id", "name"),)
+
+
+class KAEntityRelation(Base):
+    __tablename__ = "ka_entity_relations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    ka_group_id: Mapped[str] = mapped_column(ForeignKey("ka_groups.id", ondelete="CASCADE"), index=True)
+    ka_entity_id: Mapped[str] = mapped_column(ForeignKey("ka_entities.id", ondelete="CASCADE"), index=True)
+    relation_type: Mapped[str] = mapped_column(String(30), default="business_mapping", index=True)
+    confidence_score: Mapped[float] = mapped_column(Float, default=0.5)
+    evidence: Mapped[list] = mapped_column(JSON, default=list)
+    confirmed_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class KALeaderEvent(Base):
+    __tablename__ = "ka_leader_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    article_id: Mapped[str] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
+    person_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    person_title: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    organization: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    ka_group: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
+    matched_entity: Mapped[str | None] = mapped_column(String(300), nullable=True, index=True)
+    action_type: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    meeting_party: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    factual_summary: Mapped[str] = mapped_column(Text, default="")
+    source_url: Mapped[str] = mapped_column(String(1600))
+    source_name: Mapped[str] = mapped_column(String(200))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    confidence: Mapped[float] = mapped_column(Float, default=0.5)
+    evidence_excerpt: Mapped[str] = mapped_column(Text, default="")
+
+
+class CrawlBatch(Base):
+    __tablename__ = "crawl_batches"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    singleton_key: Mapped[str | None] = mapped_column(String(30), unique=True, nullable=True)
+    total_sources: Mapped[int] = mapped_column(Integer, default=0)
+    completed_count: Mapped[int] = mapped_column(Integer, default=0)
+    success_count: Mapped[int] = mapped_column(Integer, default=0)
+    empty_count: Mapped[int] = mapped_column(Integer, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_count: Mapped[int] = mapped_column(Integer, default=0)
+    new_count: Mapped[int] = mapped_column(Integer, default=0)
+    updated_count: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_count: Mapped[int] = mapped_column(Integer, default=0)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class CrawlBatchItem(Base):
+    __tablename__ = "crawl_batch_items"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("crawl_batches.id", ondelete="CASCADE"), index=True)
+    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"), index=True)
+    crawl_job_id: Mapped[str | None] = mapped_column(ForeignKey("crawl_jobs.id", ondelete="SET NULL"), nullable=True, index=True)
+    celery_task_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    skip_reason: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    __table_args__ = (UniqueConstraint("batch_id", "source_id"),)
+
+
+class SourceCapabilityCheck(Base):
+    __tablename__ = "source_capability_checks"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), index=True)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    test_method: Mapped[str] = mapped_column(String(100))
+    http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    crawlable: Mapped[bool] = mapped_column(Boolean, default=False)
+    one_year_backfill: Mapped[bool] = mapped_column(Boolean, default=False)
+    extracted_fields: Mapped[list] = mapped_column(JSON, default=list)
+    test_count: Mapped[int] = mapped_column(Integer, default=0)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    compliance_limits: Mapped[list] = mapped_column(JSON, default=list)
+    recommendation: Mapped[str] = mapped_column(Text, default="")
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class BackfillRun(Base):
+    __tablename__ = "backfill_runs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), index=True)
+    requested_by: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    date_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    date_to: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    page_limit: Mapped[int] = mapped_column(Integer, default=25)
+    current_page: Mapped[int] = mapped_column(Integer, default=0)
+    cursor: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    fetched_count: Mapped[int] = mapped_column(Integer, default=0)
+    new_count: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_count: Mapped[int] = mapped_column(Integer, default=0)
+    date_unverified_count: Mapped[int] = mapped_column(Integer, default=0)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    celery_task_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class BackfillCheckpoint(Base):
+    __tablename__ = "backfill_checkpoints"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    backfill_run_id: Mapped[str] = mapped_column(ForeignKey("backfill_runs.id", ondelete="CASCADE"), index=True)
+    page_number: Mapped[int] = mapped_column(Integer)
+    cursor: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    oldest_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    fetched_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    __table_args__ = (UniqueConstraint("backfill_run_id", "page_number"),)
