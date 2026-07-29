@@ -1,0 +1,3231 @@
+{
+  "generated_at": "2026-07-28T12:37:02.231440+00:00",
+  "count": 151,
+  "summary": {
+    "verified_working_adapters": 25,
+    "crawlable_capabilities": 38,
+    "one_year_backfill_capabilities": 37
+  },
+  "results": [
+    {
+      "source_name": "36氪出海",
+      "source_url": "https://letschuhai.com/",
+      "checked_at": "2026-07-28T12:34:36.905814+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 84,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "discovered_sitemap": "https://letschuhai.com/sitemaps"
+      }
+    },
+    {
+      "source_name": "ABB News",
+      "source_url": "https://global.abb/group/en/media/news",
+      "checked_at": "2026-07-28T12:36:31.028702+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 404,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: https://global.abb/group/en/media/news",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Abu Dhabi Department of Energy",
+      "source_url": "https://www.doe.gov.ae/",
+      "checked_at": "2026-07-28T12:35:19.676187+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "ADNOC",
+      "source_url": "https://www.adnoc.ae/",
+      "checked_at": "2026-07-28T12:35:22.846059+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.adnoc.ae', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "African Development Bank Procurement",
+      "source_url": "https://www.afdb.org/en/projects-and-operations/procurement",
+      "checked_at": "2026-07-28T12:34:57.656986+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 2,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.afdb.org/en/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "African Energy",
+      "source_url": "https://www.africa-energy.com/",
+      "checked_at": "2026-07-28T12:36:08.321793+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "AIIB Projects",
+      "source_url": "https://www.aiib.org/en/projects/list/index.html",
+      "checked_at": "2026-07-28T12:34:58.787034+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.aiib.org', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Asian Development Bank Projects & Tenders",
+      "source_url": "https://www.adb.org/projects/tenders",
+      "checked_at": "2026-07-28T12:34:56.295472+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "Bangkok Post Business",
+      "source_url": "https://www.bangkokpost.com/business",
+      "checked_at": "2026-07-28T12:36:15.701722+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 12,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.bangkokpost.com/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "BNamericas",
+      "source_url": "https://www.bnamericas.com/",
+      "checked_at": "2026-07-28T12:36:16.507216+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "restricted_by_source_notes",
+      "compliance_limits": [
+        "restricted_by_source_notes"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "BusinessWorld Philippines",
+      "source_url": "https://www.bworldonline.com/",
+      "checked_at": "2026-07-28T12:36:16.437501+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "Cloudscene",
+      "source_url": "https://cloudscene.com/",
+      "checked_at": "2026-07-28T12:36:21.998205+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "restricted_by_source_notes",
+      "compliance_limits": [
+        "restricted_by_source_notes"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "Construction Week Middle East",
+      "source_url": "https://www.constructionweekonline.com/",
+      "checked_at": "2026-07-28T12:36:03.211191+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 405,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "405 Client Error: Not Allowed for url: https://www.constructionweekonline.com/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Construction Week Saudi",
+      "source_url": "https://www.constructionweeksaudi.com/",
+      "checked_at": "2026-07-28T12:34:35.887509+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 405,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "405 Client Error: Not Allowed for url: https://www.constructionweeksaudi.com/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Data Center Dynamics",
+      "source_url": "https://www.datacenterdynamics.com/en/",
+      "checked_at": "2026-07-28T12:34:31.357389+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 20,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 20
+      }
+    },
+    {
+      "source_name": "Data Center Knowledge",
+      "source_url": "https://www.datacenterknowledge.com/",
+      "checked_at": "2026-07-28T12:34:36.068317+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 50,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 50
+      }
+    },
+    {
+      "source_name": "DataCentre Magazine",
+      "source_url": "https://datacentremagazine.com/",
+      "checked_at": "2026-07-28T12:36:18.196830+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 0
+      }
+    },
+    {
+      "source_name": "Delta Electronics News",
+      "source_url": "https://www.deltaww.com/en-US/news",
+      "checked_at": "2026-07-28T12:36:40.514648+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 404,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 2,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 2
+      }
+    },
+    {
+      "source_name": "DEWA",
+      "source_url": "https://www.dewa.gov.ae/",
+      "checked_at": "2026-07-28T12:35:19.277723+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "Eaton News",
+      "source_url": "https://www.eaton.com/us/en-us/company/news-insights/news-releases.html",
+      "checked_at": "2026-07-28T12:36:32.581384+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "timeout",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.eaton.com', port=443): Read timed out. (read timeout=8)",
+      "compliance_limits": [],
+      "recommendation": "在联网环境低频重试一次",
+      "details": {}
+    },
+    {
+      "source_name": "EBRD Procurement",
+      "source_url": "https://ecepp.ebrd.com/",
+      "checked_at": "2026-07-28T12:34:57.691087+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "rss_discovery"
+      ],
+      "http_status": 200,
+      "status": "rss_available",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "RSS link was advertised but returned zero parseable entries",
+      "compliance_limits": [],
+      "recommendation": "保留为候选；零条结果不启用自动抓取",
+      "details": {
+        "discovered_feed": "https://ecepp.ebrd.com/feed/"
+      }
+    },
+    {
+      "source_name": "EGAT",
+      "source_url": "https://www.egat.co.th/",
+      "checked_at": "2026-07-28T12:35:49.338778+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 10
+      }
+    },
+    {
+      "source_name": "Egypt NUCA",
+      "source_url": "http://www.newcities.gov.eg/",
+      "checked_at": "2026-07-28T12:35:28.536842+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 29,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "Egyptian Electricity Holding Company",
+      "source_url": "https://www.eehc.gov.eg/",
+      "checked_at": "2026-07-28T12:35:31.452017+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "timeout",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.eehc.gov.eg', port=443): Read timed out. (read timeout=8)",
+      "compliance_limits": [],
+      "recommendation": "在联网环境低频重试一次",
+      "details": {}
+    },
+    {
+      "source_name": "Energy Capital & Power",
+      "source_url": "https://energycapitalpower.com/",
+      "checked_at": "2026-07-28T12:36:13.045392+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "rss_discovery"
+      ],
+      "http_status": 200,
+      "status": "rss_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "优先配置并验证公开RSS：https://energycapitalpower.com/feed/",
+      "details": {
+        "discovered_feed": "https://energycapitalpower.com/feed/"
+      }
+    },
+    {
+      "source_name": "Energy Storage News",
+      "source_url": "https://www.energy-storage.news/",
+      "checked_at": "2026-07-28T12:36:23.606552+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.energy-storage.news', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Engineering News",
+      "source_url": "https://www.engineeringnews.co.za/",
+      "checked_at": "2026-07-28T12:36:10.265471+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: https://www.engineeringnews.co.za/page/rss.html",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "ESI Africa",
+      "source_url": "https://www.esi-africa.com/",
+      "checked_at": "2026-07-28T12:36:08.494660+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "Global Infrastructure Hub",
+      "source_url": "https://www.gihub.org/",
+      "checked_at": "2026-07-28T12:35:03.813385+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "Gulf Construction",
+      "source_url": "https://www.gulfconstructiononline.com/",
+      "checked_at": "2026-07-28T12:36:03.995184+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "Honeywell News",
+      "source_url": "https://www.honeywell.com/us/en/news",
+      "checked_at": "2026-07-28T12:36:44.280424+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "IDC圈",
+      "source_url": "https://www.idcquan.com/",
+      "checked_at": "2026-07-28T12:34:31.357389+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "IKN Nusantara",
+      "source_url": "https://www.ikn.go.id/",
+      "checked_at": "2026-07-28T12:35:42.516614+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "Indonesia BKPM",
+      "source_url": "https://www.investindonesia.go.id/",
+      "checked_at": "2026-07-28T12:35:39.359746+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.investindonesia.go.id', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Inter-American Development Bank Projects",
+      "source_url": "https://www.iadb.org/en/projects",
+      "checked_at": "2026-07-28T12:35:02.955656+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "Islamic Development Bank Procurement",
+      "source_url": "https://www.isdb.org/project-procurement",
+      "checked_at": "2026-07-28T12:35:00.910056+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 2,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.isdb.org/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "Legrand Newsroom",
+      "source_url": "https://www.legrandgroup.com/en/newsroom",
+      "checked_at": "2026-07-28T12:36:35.605490+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.legrand.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Masdar",
+      "source_url": "https://masdar.ae/",
+      "checked_at": "2026-07-28T12:35:22.374236+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "MEA Thailand",
+      "source_url": "https://www.mea.or.th/",
+      "checked_at": "2026-07-28T12:35:52.001415+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.mea.or.th', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "MEED",
+      "source_url": "https://www.meed.com/",
+      "checked_at": "2026-07-28T12:36:02.622723+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "restricted_by_source_notes",
+      "compliance_limits": [
+        "restricted_by_source_notes"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "Mexico Business News",
+      "source_url": "https://mexicobusiness.news/",
+      "checked_at": "2026-07-28T12:36:16.507253+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "Mexico News Daily",
+      "source_url": "https://mexiconewsdaily.com/",
+      "checked_at": "2026-07-28T12:34:37.219330+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 10
+      }
+    },
+    {
+      "source_name": "Mexico SENER",
+      "source_url": "https://www.gob.mx/sener",
+      "checked_at": "2026-07-28T12:36:01.542632+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url"
+      ],
+      "test_count": 3,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.gob.mx/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "MIDA Malaysia",
+      "source_url": "https://www.mida.gov.my/",
+      "checked_at": "2026-07-28T12:35:44.378081+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 10
+      }
+    },
+    {
+      "source_name": "Mining Weekly",
+      "source_url": "https://www.miningweekly.com/",
+      "checked_at": "2026-07-28T12:36:11.673667+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: https://www.miningweekly.com/page/rss.html",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "MRT Corp Malaysia",
+      "source_url": "https://www.mymrt.com.my/",
+      "checked_at": "2026-07-28T12:35:45.706341+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "NEOM",
+      "source_url": "https://www.neom.com/",
+      "checked_at": "2026-07-28T12:35:09.105943+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "NGCP Philippines",
+      "source_url": "https://www.ngcp.ph/",
+      "checked_at": "2026-07-28T12:35:57.202105+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "Nikkei Asia",
+      "source_url": "https://asia.nikkei.com/",
+      "checked_at": "2026-07-28T12:36:15.098279+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "restricted_by_source_notes",
+      "compliance_limits": [
+        "restricted_by_source_notes"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "NS Energy",
+      "source_url": "https://www.nsenergybusiness.com/",
+      "checked_at": "2026-07-28T12:36:28.583102+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "Offshore Energy",
+      "source_url": "https://www.offshore-energy.biz/",
+      "checked_at": "2026-07-28T12:36:28.614977+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 10
+      }
+    },
+    {
+      "source_name": "PEA Thailand",
+      "source_url": "https://www.pea.co.th/",
+      "checked_at": "2026-07-28T12:35:50.370941+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 4,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 0
+      }
+    },
+    {
+      "source_name": "Philippines Department of Energy",
+      "source_url": "https://www.doe.gov.ph/",
+      "checked_at": "2026-07-28T12:35:53.393817+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url"
+      ],
+      "test_count": 24,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "discovered_sitemap": "https://doe.gov.ph/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "Philippines PPP Center",
+      "source_url": "https://ppp.gov.ph/",
+      "checked_at": "2026-07-28T12:35:52.029243+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "PLN Indonesia",
+      "source_url": "https://web.pln.co.id/",
+      "checked_at": "2026-07-28T12:35:39.468878+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='web.pln.co.id', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Power Technology",
+      "source_url": "https://www.power-technology.com/",
+      "checked_at": "2026-07-28T12:36:27.596574+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "Proyectos México",
+      "source_url": "https://www.proyectosmexico.gob.mx/",
+      "checked_at": "2026-07-28T12:35:58.728239+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "PV Magazine",
+      "source_url": "https://www.pv-magazine.com/",
+      "checked_at": "2026-07-28T12:36:23.212133+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 10
+      }
+    },
+    {
+      "source_name": "PV Tech",
+      "source_url": "https://www.pv-tech.org/",
+      "checked_at": "2026-07-28T12:36:21.998205+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "403 Client Error: Forbidden for url: https://www.pv-tech.org/feed/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Qatar Ashghal",
+      "source_url": "https://www.ashghal.gov.qa/",
+      "checked_at": "2026-07-28T12:35:25.009633+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 98,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "QatarEnergy",
+      "source_url": "https://www.qatarenergy.qa/",
+      "checked_at": "2026-07-28T12:35:27.853132+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "Renewables Now",
+      "source_url": "https://renewablesnow.com/",
+      "checked_at": "2026-07-28T12:36:24.530059+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: https://renewablesnow.com/news/rss/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Rockwell Automation News",
+      "source_url": "https://www.rockwellautomation.com/en-us/company/news.html",
+      "checked_at": "2026-07-28T12:36:43.680439+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 204,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "discovered_sitemap": "https://www.rockwellautomation.com/en-us/sitemapindex.xml"
+      }
+    },
+    {
+      "source_name": "Saudi Arabia Railways",
+      "source_url": "https://www.sar.com.sa/",
+      "checked_at": "2026-07-28T12:35:15.797382+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 401,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 401",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "Saudi Electricity Company",
+      "source_url": "https://www.se.com.sa/",
+      "checked_at": "2026-07-28T12:35:10.780237+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.se.com.sa', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Saudi PIF",
+      "source_url": "https://www.pif.gov.sa/",
+      "checked_at": "2026-07-28T12:35:06.666175+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "Saudi Ports Authority Mawani",
+      "source_url": "https://mawani.gov.sa/",
+      "checked_at": "2026-07-28T12:35:14.745443+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 405,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "405 Client Error: Not Allowed for url: https://mawani.gov.sa/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Saudi Vision 2030",
+      "source_url": "https://www.vision2030.gov.sa/",
+      "checked_at": "2026-07-28T12:35:05.776895+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.vision2030.gov.sa', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Saudi Water Authority",
+      "source_url": "https://www.swa.gov.sa/",
+      "checked_at": "2026-07-28T12:35:13.247479+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "Siemens Energy Press",
+      "source_url": "https://www.siemens-energy.com/global/en/home/press-releases.html",
+      "checked_at": "2026-07-28T12:36:30.576796+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.siemens-energy.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "Siemens Press",
+      "source_url": "https://press.siemens.com/global/en",
+      "checked_at": "2026-07-28T12:36:30.378254+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "Tenaga Nasional Berhad",
+      "source_url": "https://www.tnb.com.my/",
+      "checked_at": "2026-07-28T12:35:44.486752+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 0
+      }
+    },
+    {
+      "source_name": "Thailand BOI",
+      "source_url": "https://www.boi.go.th/",
+      "checked_at": "2026-07-28T12:35:46.745328+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 1,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.boi.go.th/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "The Edge Malaysia",
+      "source_url": "https://theedgemalaysia.com/",
+      "checked_at": "2026-07-28T12:36:14.769839+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "The Investor Vietnam",
+      "source_url": "https://theinvestor.vn/investing/",
+      "checked_at": "2026-07-28T12:34:33.151885+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "The Jakarta Post Business",
+      "source_url": "https://www.thejakartapost.com/business",
+      "checked_at": "2026-07-28T12:36:15.098279+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "paywalled",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "paywall/login text detected",
+      "compliance_limits": [
+        "paywall"
+      ],
+      "recommendation": "不绕过付费墙；保留线索或人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "UNGM",
+      "source_url": "https://www.ungm.org/Public/Notice",
+      "checked_at": "2026-07-28T12:34:59.438723+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 166,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "Utilities Middle East",
+      "source_url": "https://www.utilities-me.com/",
+      "checked_at": "2026-07-28T12:36:07.638166+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 405,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "405 Client Error: Not Allowed for url: https://www.utilities-me.com/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Vertiv News",
+      "source_url": "https://www.vertiv.com/en-us/about/news-and-insights/news-releases/",
+      "checked_at": "2026-07-28T12:36:37.640224+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 404,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: https://www.vertiv.com/en-us/about/news-and-events/news-releases/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "Vietnam Electricity EVN",
+      "source_url": "https://en.evn.com.vn/",
+      "checked_at": "2026-07-28T12:35:34.508087+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 92,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "Vietnam Investment Review",
+      "source_url": "https://vir.com.vn/",
+      "checked_at": "2026-07-28T12:36:14.404696+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 20,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "HTMLListAdapter",
+        "dated_items": 0
+      }
+    },
+    {
+      "source_name": "Vietnam Ministry of Planning and Investment",
+      "source_url": "https://www.mpi.gov.vn/",
+      "checked_at": "2026-07-28T12:35:34.474348+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "timeout",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.mpi.gov.vn', port=443): Read timed out. (read timeout=8)",
+      "compliance_limits": [],
+      "recommendation": "在联网环境低频重试一次",
+      "details": {}
+    },
+    {
+      "source_name": "W.Media",
+      "source_url": "https://w.media/",
+      "checked_at": "2026-07-28T12:36:16.762056+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 10,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "RSSAdapter",
+        "dated_items": 10
+      }
+    },
+    {
+      "source_name": "World Bank Projects & Procurement",
+      "source_url": "https://projects.worldbank.org/en/projects-operations/procurement",
+      "checked_at": "2026-07-28T12:34:56.295472+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 50,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "WorldBankDocumentsAdapter",
+        "dated_items": 50
+      }
+    },
+    {
+      "source_name": "Zawya",
+      "source_url": "https://www.zawya.com/",
+      "checked_at": "2026-07-28T12:36:02.622723+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.zawya.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "一带一路金融工程",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "中东北非工程基建",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "中交集团新闻中心",
+      "source_url": "https://www.ccccltd.cn/",
+      "checked_at": "2026-07-28T12:34:41.169865+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 521,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "521 Server Error:  for url: https://www.ccccltd.cn/",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "中关村储能产业技术联盟 CNESA",
+      "source_url": "https://www.cnesa.org/",
+      "checked_at": "2026-07-28T12:34:55.404848+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 54,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国一带一路网",
+      "source_url": "https://www.yidaiyilu.gov.cn/",
+      "checked_at": "2026-07-28T12:34:50.485006+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": null,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.yidaiyilu.gov.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by ProxyError('Unable to connect to proxy', RemoteDisconnected('Remote end closed connection without response')))",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "中国一带一路网公众号",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "中国中铁新闻中心",
+      "source_url": "https://www.crecg.com/",
+      "checked_at": "2026-07-28T12:34:40.810278+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url"
+      ],
+      "test_count": 18,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "discovered_sitemap": "https://www.crec.cn/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "中国光伏行业协会",
+      "source_url": "https://www.chinapv.org.cn/",
+      "checked_at": "2026-07-28T12:34:55.048146+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 177,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国土木",
+      "source_url": "https://www.ccecc.com.cn/",
+      "checked_at": "2026-07-28T12:34:41.134741+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.ccecc.com.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "中国对外承包工程商会",
+      "source_url": "https://www.chinca.org/",
+      "checked_at": "2026-07-28T12:34:54.538672+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "reachable but no parseable public list content",
+      "compliance_limits": [],
+      "recommendation": "检查官方API、RSS或sitemap",
+      "details": {}
+    },
+    {
+      "source_name": "中国建筑新闻中心",
+      "source_url": "https://www.cscec.com/xwzx_new/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 1,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国机电产品进出口商会",
+      "source_url": "https://www.cccme.cn/",
+      "checked_at": "2026-07-28T12:34:54.196599+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 200,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国港湾",
+      "source_url": "https://www.chec.bj.cn/",
+      "checked_at": "2026-07-28T12:34:41.224165+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 130,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国电力企业联合会",
+      "source_url": "https://www.cec.org.cn/",
+      "checked_at": "2026-07-28T12:34:54.970965+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": 200,
+      "status": "robots_blocked",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "robots.txt disallows this URL",
+      "compliance_limits": [
+        "robots.txt"
+      ],
+      "recommendation": "不自动抓取；寻找官方API/RSS或人工导入",
+      "details": {}
+    },
+    {
+      "source_name": "中国电工",
+      "source_url": "https://www.cneec.com.cn/",
+      "checked_at": "2026-07-28T12:34:43.082853+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.cneec.com.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'www.cneec.com.cn'. (_ssl.c:1000)\")))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "中国电建新闻中心",
+      "source_url": "https://www.powerchina.cn/col/col7440/index.html",
+      "checked_at": "2026-07-28T12:34:40.226419+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 404,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: https://www.powerchina.cn/col/col7440/index.html",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "中国电气装备",
+      "source_url": "https://www.cee-group.cn/",
+      "checked_at": "2026-07-28T12:34:46.116212+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 49,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国能建新闻中心",
+      "source_url": "https://www.ceec.net.cn/col/col11019/index.html",
+      "checked_at": "2026-07-28T12:34:40.551742+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "no public article links in server HTML",
+      "compliance_limits": [],
+      "recommendation": "寻找官方API/RSS/sitemap；不绕过验证",
+      "details": {}
+    },
+    {
+      "source_name": "中国西电",
+      "source_url": "https://www.xd.com.cn/",
+      "checked_at": "2026-07-28T12:34:47.627041+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.xd.com.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "中国贸促会",
+      "source_url": "https://www.ccpit.org/",
+      "checked_at": "2026-07-28T12:34:52.699093+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 200,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国路桥",
+      "source_url": "https://www.crbc.com/",
+      "checked_at": "2026-07-28T12:34:41.581893+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 107,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中国铁建新闻中心",
+      "source_url": "https://www.crcc.cn/",
+      "checked_at": "2026-07-28T12:34:41.110957+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 105,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中工国际",
+      "source_url": "https://www.camce.com.cn/",
+      "checked_at": "2026-07-28T12:34:42.380672+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.camce.com.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'www.camce.com.cn'. (_ssl.c:1000)\")))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "中建国际新闻中心",
+      "source_url": "https://www.csci.com.hk/zh/media-centre/press-release",
+      "checked_at": "2026-07-28T12:34:39.913476+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.csci.com.hk', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "中海外",
+      "source_url": "https://www.covec.com/",
+      "checked_at": "2026-07-28T12:34:41.045397+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.covec.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'www.covec.com'. (_ssl.c:1000)\")))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "中电工程",
+      "source_url": "https://www.cpecc.net/",
+      "checked_at": "2026-07-28T12:34:40.769132+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 60,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中航国际",
+      "source_url": "https://www.avic-intl.cn/",
+      "checked_at": "2026-07-28T12:34:49.840006+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 14,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "中车国际",
+      "source_url": "https://www.crrcgc.cc/",
+      "checked_at": "2026-07-28T12:34:48.628163+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "original_url"
+      ],
+      "test_count": 185,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "discovered_sitemap": "https://www.crrcgc.cc/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "今日头条",
+      "source_url": "https://www.toutiao.com/",
+      "checked_at": "2026-07-28T12:34:34.928635+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "no public article links in server HTML",
+      "compliance_limits": [],
+      "recommendation": "寻找官方API/RSS/sitemap；不绕过验证",
+      "details": {}
+    },
+    {
+      "source_name": "保利科技",
+      "source_url": "https://www.polytechnologiesinc.com/",
+      "checked_at": "2026-07-28T12:34:49.533992+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.polytechnologiesinc.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "储能见闻",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "全球光伏",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "出海内参",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "北极星太阳能光伏网",
+      "source_url": "https://guangfu.bjx.com.cn/",
+      "checked_at": "2026-07-28T12:34:36.694343+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 200,
+      "status": "javascript_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "captcha or browser verification detected",
+      "compliance_limits": [
+        "captcha"
+      ],
+      "recommendation": "不绕过验证码；建议人工导入",
+      "details": {
+        "registered_adapter": "HTMLListAdapter"
+      }
+    },
+    {
+      "source_name": "发现报告",
+      "source_url": "https://www.fxbaogao.com/",
+      "checked_at": "2026-07-28T12:34:34.239184+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 7,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.fxbaogao.com/sitemap/index.xml"
+      }
+    },
+    {
+      "source_name": "哈尔滨电气",
+      "source_url": "https://www.harbin-electric.com/",
+      "checked_at": "2026-07-28T12:34:44.117321+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 191,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "哈电国际",
+      "source_url": "https://www.hei.com.cn/",
+      "checked_at": "2026-07-28T12:34:44.835304+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.hei.com.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "商务部对外投资和经济合作司",
+      "source_url": "http://hzs.mofcom.gov.cn/",
+      "checked_at": "2026-07-28T12:34:50.593958+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 41,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "国机集团新闻中心",
+      "source_url": "https://www.sinomach.com.cn/",
+      "checked_at": "2026-07-28T12:34:42.344113+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 200,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "国资委央企动态",
+      "source_url": "https://www.sasac.gov.cn/n2588025/n2588124/index.html",
+      "checked_at": "2026-07-28T12:34:51.236662+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.sasac.gov.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "国际工程与海外项目",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "地方贸促会与商务厅",
+      "source_url": "https://www.ccpit.org/",
+      "checked_at": "2026-07-28T12:34:56.295472+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "山东电工电气",
+      "source_url": "https://www.sdee.sgcc.com.cn/",
+      "checked_at": "2026-07-28T12:34:48.611289+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "('Connection aborted.', ConnectionAbortedError(10053, '你的主机中的软件中止了一个已建立的连接。', None, 10053, None))",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    },
+    {
+      "source_name": "山东电建三公司",
+      "source_url": "https://www.sepco3.com/",
+      "checked_at": "2026-07-28T12:34:40.357849+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.sepco3.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "巨潮资讯",
+      "source_url": "https://www.cninfo.com.cn/new/index",
+      "checked_at": "2026-07-28T12:34:35.150630+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 19,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "平高电气",
+      "source_url": "https://www.pinggao.com/",
+      "checked_at": "2026-07-28T12:34:47.888338+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url"
+      ],
+      "test_count": 0,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.pinggao.com/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "平高电气竞品观察",
+      "source_url": "https://www.pinggao.com/",
+      "checked_at": "2026-07-28T12:36:50.931442+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "original_url"
+      ],
+      "test_count": 0,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "discovered_sitemap": "https://www.pinggao.com/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "振华重工",
+      "source_url": "https://www.zpmc.com/",
+      "checked_at": "2026-07-28T12:34:41.929124+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 5,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 5
+      }
+    },
+    {
+      "source_name": "格隆汇",
+      "source_url": "https://www.gelonghui.com/",
+      "checked_at": "2026-07-28T12:34:32.125238+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 64,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "正泰新闻",
+      "source_url": "https://www.chint.com/zh/news",
+      "checked_at": "2026-07-28T12:36:49.066201+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 403,
+      "status": "login_required",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTP 403",
+      "compliance_limits": [
+        "access_control"
+      ],
+      "recommendation": "不绕过访问控制；改用公开官方源",
+      "details": {}
+    },
+    {
+      "source_name": "海外工程那些事儿",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "海外项目甲方信息库",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "特变电工新闻",
+      "source_url": "https://www.tbea.com/",
+      "checked_at": "2026-07-28T12:36:50.090498+00:00",
+      "test_method": [
+        "registered_adapter",
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "sitemap_available",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 818,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "新增合规 sitemap 适配器，并在详情页提取标题与发布日期。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "discovered_sitemap": "https://www.tbea.com/sitemap.xml"
+      }
+    },
+    {
+      "source_name": "电子制造出海资讯",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "界面新闻",
+      "source_url": "https://www.jiemian.com/",
+      "checked_at": "2026-07-28T12:34:31.356387+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 117,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "良信电器",
+      "source_url": "https://www.sh-liangxin.com/",
+      "checked_at": "2026-07-28T12:36:49.459413+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 1,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "SitemapAdapter",
+        "dated_items": 1
+      }
+    },
+    {
+      "source_name": "苏美达",
+      "source_url": "https://www.sumec.com/",
+      "checked_at": "2026-07-28T12:34:43.139440+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url",
+        "published_at"
+      ],
+      "test_count": 137,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "葛洲坝集团",
+      "source_url": "https://www.cggc.ceec.net.cn/",
+      "checked_at": "2026-07-28T12:34:40.766609+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.cggc.ceec.net.cn', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "见道网海外项目",
+      "source_url": "https://www.seetao.com/list/220.html",
+      "checked_at": "2026-07-28T12:34:39.599398+00:00",
+      "test_method": [
+        "registered_adapter"
+      ],
+      "http_status": 200,
+      "status": "adapter_working",
+      "crawlable": true,
+      "one_year_backfill": false,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 11,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "保持低频抓取并持续监控字段完整率；回填能力以适配器分页配置为准。",
+      "details": {
+        "registered_adapter": "HTMLListAdapter",
+        "dated_items": 0
+      }
+    },
+    {
+      "source_name": "许继电气",
+      "source_url": "https://www.xjgc.com/",
+      "checked_at": "2026-07-28T12:34:47.693480+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.xjgc.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "许继电气竞品观察",
+      "source_url": "https://www.xjgc.com/",
+      "checked_at": "2026-07-28T12:36:50.540259+00:00",
+      "test_method": [
+        "robots.txt"
+      ],
+      "http_status": null,
+      "status": "certificate_error",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "HTTPSConnectionPool(host='www.xjgc.com', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))",
+      "compliance_limits": [],
+      "recommendation": "由来源站修复证书后再启用",
+      "details": {}
+    },
+    {
+      "source_name": "财联社",
+      "source_url": "https://www.cls.cn/",
+      "checked_at": "2026-07-28T12:34:31.355387+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get",
+        "sitemap_discovery"
+      ],
+      "http_status": 200,
+      "status": "reachable_no_content",
+      "crawlable": false,
+      "one_year_backfill": true,
+      "extracted_fields": [
+        "title",
+        "original_url"
+      ],
+      "test_count": 103,
+      "failure_reason": null,
+      "compliance_limits": [],
+      "recommendation": "页面可达且存在候选链接；需新增并真实验证站点专用选择器后才能标记可抓取。",
+      "details": {}
+    },
+    {
+      "source_name": "走出去情报",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "阿中产业研究院",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "马来西亚建筑通",
+      "source_url": "https://mp.weixin.qq.com/",
+      "checked_at": "2026-07-28T12:34:39.743168+00:00",
+      "test_method": [],
+      "http_status": null,
+      "status": "manual_recommended",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "manual_only",
+      "compliance_limits": [
+        "manual_only"
+      ],
+      "recommendation": "保持人工导入或获得明确授权后再测试",
+      "details": {}
+    },
+    {
+      "source_name": "驻外经商机构名录",
+      "source_url": "http://www.mofcom.gov.cn/mofcom/guobie.shtml",
+      "checked_at": "2026-07-28T12:34:50.829532+00:00",
+      "test_method": [
+        "robots.txt",
+        "https_get"
+      ],
+      "http_status": 404,
+      "status": "parsing_failed",
+      "crawlable": false,
+      "one_year_backfill": false,
+      "extracted_fields": [],
+      "test_count": 0,
+      "failure_reason": "404 Client Error: Not Found for url: http://www.mofcom.gov.cn/mofcom/guobie.shtml",
+      "compliance_limits": [],
+      "recommendation": "检查DNS、HTTPS和来源可用性",
+      "details": {}
+    }
+  ]
+}
