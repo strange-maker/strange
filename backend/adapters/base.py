@@ -27,6 +27,13 @@ class SourceItem:
     raw: dict = field(default_factory=dict)
 
 
+@dataclass
+class BackfillPage:
+    items: list[SourceItem]
+    next_cursor: str | None
+    exhausted: bool = False
+
+
 class BaseAdapter(ABC):
     def __init__(self, source_url: str, config: dict | None = None):
         self.source_url = source_url
@@ -55,6 +62,20 @@ class BaseAdapter(ABC):
 
     def get_next_page(self, page: int) -> int | None:
         return page + 1 if self.config.get("max_pages", 1) > page else None
+
+    def fetch_backfill(self, page: int = 1, cursor: str | None = None) -> BackfillPage:
+        """Default archive contract; API/RSS/sitemap adapters may override it."""
+        current=int(cursor) if cursor and cursor.isdigit() else page
+        items=self.fetch_list(current)
+        next_page=self.get_next_page(current)
+        return BackfillPage(items=items,next_cursor=str(next_page) if next_page else None,exhausted=not items or next_page is None)
+
+    def capabilities(self) -> dict:
+        return {
+            "pagination": self.config.get("max_pages", 1) > 1,
+            "backfill": self.config.get("max_pages", 1) > 1 or bool(self.config.get("supports_backfill")),
+            "method": self.__class__.__name__,
+        }
 
     def health_check(self) -> dict:
         self._assert_robots_allowed(self.config.get("endpoint", self.source_url))

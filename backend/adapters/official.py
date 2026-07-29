@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import re
+from urllib.parse import unquote, urlparse
 
 from bs4 import BeautifulSoup
 
@@ -45,6 +47,62 @@ class HTMLListAdapter(BaseAdapter):
         content=soup.select_one(self.config.get("content_selector", "article, main"))
         if content: item.excerpt=content.get_text(" ",strip=True)[:6000]
         return self.normalize(item)
+
+
+class SitemapAdapter(BaseAdapter):
+    """Low-frequency public sitemap adapter with optional URL-scope filtering."""
+
+    def _entries(self) -> list[tuple[str, datetime | None]]:
+        response=self._get(self.config["endpoint"])
+        documents=[response.text]
+        if "<sitemapindex" in response.text[:4000].lower():
+            child_urls=re.findall(r"<loc>\s*(.*?)\s*</loc>",response.text,re.I|re.S)
+            child_pattern=self.config.get("sitemap_include_regex")
+            if child_pattern:
+                child_urls=[url for url in child_urls if re.search(child_pattern,url,re.I)]
+            for url in child_urls[: self.config.get("max_sitemaps",4)]:
+                documents.append(self._get(url.strip()).text)
+        entries=[]
+        for document in documents:
+            for block in re.findall(r"<url\b.*?</url>",document,re.I|re.S):
+                loc=re.search(r"<loc>\s*(.*?)\s*</loc>",block,re.I|re.S)
+                if not loc: continue
+                url=loc.group(1).strip().replace("&amp;","&")
+                include=self.config.get("include_regex")
+                exclude=self.config.get("exclude_regex")
+                if include and not re.search(include,url,re.I): continue
+                if exclude and re.search(exclude,url,re.I): continue
+                lastmod=re.search(r"<lastmod>\s*(.*?)\s*</lastmod>",block,re.I|re.S)
+                entries.append((url,_parse_date(lastmod.group(1)) if lastmod else None))
+        entries.sort(key=lambda value:value[1] or datetime.min.replace(tzinfo=timezone.utc),reverse=True)
+        return entries
+
+    def fetch_list(self, page: int = 1) -> list[SourceItem]:
+        limit=self.config.get("limit",40)
+        entries=self._entries()[(page-1)*limit:page*limit]
+        items=[]
+        for url,published in entries:
+            slug=unquote(urlparse(url).path.rstrip("/").split("/")[-1])
+            title=re.sub(r"[-_]+"," ",slug).strip() or urlparse(url).netloc
+            items.append(self.normalize(SourceItem(title=title,url=url,published_at=published,language=self.config.get("language","unknown"))))
+        return [item for item in items if self.validate(item)]
+
+    def fetch_detail(self, item: SourceItem) -> SourceItem:
+        response=self._get(item.url)
+        soup=BeautifulSoup(response.text,"html.parser")
+        title=soup.select_one("meta[property='og:title'], meta[name='twitter:title']")
+        heading=soup.select_one("h1, article h2, title")
+        if title and title.get("content"): item.title=title["content"]
+        elif heading: item.title=heading.get_text(" ",strip=True)
+        published=soup.select_one("meta[property='article:published_time'], meta[name='date'], time[datetime]")
+        if not item.published_at and published:
+            item.published_at=_parse_date(published.get("content") or published.get("datetime") or published.get_text(" ",strip=True))
+        content=soup.select_one(self.config.get("content_selector","article, main"))
+        if content: item.excerpt=content.get_text(" ",strip=True)[:6000]
+        return self.normalize(item)
+
+    def capabilities(self) -> dict:
+        return {"pagination":True,"backfill":True,"method":self.__class__.__name__}
 
 
 def _parse_date(value: str | None) -> datetime | None:
