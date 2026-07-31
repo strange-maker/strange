@@ -1,11 +1,14 @@
 from datetime import timedelta
 from types import SimpleNamespace
 
+import requests
 from sqlalchemy import func, select
 
 import api
 import tasks
-from adapters.cscec import CSCECOrganizationAdapter, _parse_cscec_date
+from adapters.base import SourceItem
+from adapters.cscec import CSCECNewsAdapter, CSCECOrganizationAdapter, _parse_cscec_date
+from adapters.registry import get_adapter_definition
 from cscec import (
     capture_page_snapshot,
     classify_leadership_event,
@@ -16,7 +19,9 @@ from cscec import (
     record_cscec_article_events,
 )
 from database import SessionLocal
+from ingestion import ingest_item
 from models import Article, CSCECLeadershipEvent, CSCECOrgEvent, PageDiff, Source, utcnow
+from source_service import sync_sources
 
 
 def test_master_is_complete_and_preserves_sensitive_names():
@@ -50,6 +55,56 @@ def test_organization_parser_and_date_parser():
     assert rows[0]["official_url"] == "https://1bur.cscec.com/"
     assert rows[1]["official_url"].startswith("https://www.cscec.com/")
     assert _parse_cscec_date("2026年7月29日").year == 2026
+    assert _parse_cscec_date("07-29").month == 7
+
+
+def _html_response(url: str, html: str) -> requests.Response:
+    response=requests.Response()
+    response.status_code=200
+    response.url=url
+    response.encoding="utf-8"
+    response._content=html.encode("utf-8")
+    return response
+
+
+def test_cscec_news_adapter_discovers_news_section_and_wechat_leads(monkeypatch):
+    homepage="""<nav><a href="/xwzx/gsyw/">公司要闻</a></nav>"""
+    listing="""<ul class="news-list">
+      <li><a href="/xwzx/gsyw/202607/1234567.html">中建四局海外项目取得新进展</a><span class="date">2026-07-29</span></li>
+      <li><a href="https://mp.weixin.qq.com/s/demo">中建四局主要领导赴项目调研</a><span>2026年7月28日</span></li>
+    </ul>"""
+    adapter=CSCECNewsAdapter("https://4bur.cscec.com/",{
+        "endpoint":"https://4bur.cscec.com/",
+        "auto_discover_news":True,
+        "include_wechat_index_leads":True,
+    })
+    def fake_get(url: str,**_kwargs):
+        return _html_response(url,listing if "/xwzx/gsyw" in url else homepage)
+    monkeypatch.setattr(adapter,"_get",fake_get)
+    items=adapter.fetch_list()
+    assert len(items) == 2
+    assert items[0].published_at and items[0].published_at.year == 2026
+    wechat=next(item for item in items if "mp.weixin.qq.com" in item.url)
+    assert wechat.raw["wechat_link_only"] is True
+    monkeypatch.setattr(adapter,"_get",lambda *_args,**_kwargs:(_ for _ in ()).throw(AssertionError("WeChat body must not be auto-fetched")))
+    assert "正文未自动抓取" in adapter.fetch_detail(wechat).excerpt
+
+
+def test_cscec_source_family_is_registered_and_pending_sources_activate():
+    definition=get_adapter_definition("中建四局新闻","https://4bur.cscec.com/",{
+        "ka_focus":"cscec","source_type":"official","crawl_method":"html",
+    })
+    assert definition and definition["initial_status"] == "active"
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.source_name == "中建四局新闻"))
+        source.adapter_status="pending_adapter"
+        source.enabled=False
+        db.commit()
+        sync_sources(db)
+        db.refresh(source)
+        assert source.adapter_status == "active"
+        assert source.enabled is True
+        assert source.adapter_config["auto_discover_news"] is True
 
 
 def test_leadership_activity_is_not_misclassified_as_appointment():
@@ -116,6 +171,42 @@ def test_cscec_event_deduplication():
         record_cscec_article_events(db,article,source)
         db.commit()
         assert db.scalar(select(func.count(CSCECLeadershipEvent.id))) == 1
+
+
+def test_domestic_cscec_governance_is_kept_out_of_overseas_feed_but_recorded():
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.source_name == "中建四局新闻"))
+        result=ingest_item(db,source,SourceItem(
+            title="任命张三为中建四局某公司董事长",
+            url="https://4bur.cscec.com/xwzx/gsyw/202607/7654321.html",
+            published_at=utcnow(),
+            excerpt="中建四局发布干部任免决定，任命张三为某公司董事长。",
+            language="zh",
+        ))
+        db.commit()
+        assert result == "new"
+        article=db.scalar(select(Article).where(Article.title.like("任命张三%")))
+        assert article and article.is_overseas is False
+        assert db.scalar(select(func.count(CSCECLeadershipEvent.id))) == 1
+
+
+def test_official_index_wechat_link_is_low_confidence_lead():
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.source_name == "中建五局新闻"))
+        result=ingest_item(db,source,SourceItem(
+            title="中建五局党委书记李明赴项目调研",
+            url="https://mp.weixin.qq.com/s/example-lead",
+            published_at=utcnow(),
+            excerpt="中建五局党委书记李明赴项目调研。",
+            language="zh",
+            raw={"wechat_link_only":True,"official_index_url":"https://5bur.cscec.com/xwzx/wjyw/"},
+        ))
+        db.commit()
+        assert result == "new"
+        article=db.scalar(select(Article).where(Article.original_url.like("%example-lead%")))
+        assert article.source_type == "wechat_manual"
+        assert article.reliability_level == "low"
+        assert article.is_primary_source is False
 
 
 def test_cscec_api_and_manual_only_sources(client,admin_headers):
