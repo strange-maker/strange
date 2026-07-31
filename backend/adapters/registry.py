@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from adapters.feeds import RSSAdapter
 from adapters.official import HTMLListAdapter, SitemapAdapter, WorldBankDocumentsAdapter
-from adapters.cscec import CSCECNewsAdapter, CSCECOrganizationAdapter
+from adapters.cscec import (
+    CSCECNewsAdapter,
+    CSCECOrganizationAdapter,
+    CSCECPDFAnnouncementAdapter,
+)
 
 
 CSCEC_AUTO_NEWS_SOURCES = {
     "中国建筑官网",
     "中国建筑新闻中心",
-    "中国建筑投资者服务",
     "中建国际新闻中心",
     "中国海外集团新闻",
     "中建一局新闻",
@@ -44,6 +47,22 @@ ADAPTER_CONFIGS: dict[str, dict] = {
     "中国建筑组织架构":{
         "class":CSCECOrganizationAdapter,
         "endpoint":"https://www.cscec.com/fzlm_new/zjwzq/",
+        "schedule_minutes":1440,
+        "initial_status":"active",
+    },
+    "中国建筑投资者服务":{
+        "class":CSCECPDFAnnouncementAdapter,
+        "endpoint":"https://www.cscec.com/tzzgxnew/tzgg_new/",
+        "item_selector":"ul.yxj-list li",
+        "fetch_detail":True,
+        "recent_limit":25,
+        "priority_limit":35,
+        "priority_lookback_days":730,
+        "backfill_batch_size":10,
+        "max_pdf_bytes":15000000,
+        "max_pdf_pages":100,
+        "supports_backfill":True,
+        "backfill_page_limit":200,
         "schedule_minutes":1440,
         "initial_status":"active",
     },

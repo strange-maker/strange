@@ -7,8 +7,8 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import requests
 
-from adapters.base import BaseAdapter, SourceItem, canonicalize_url
-from cscec import parse_cscec_organization
+from adapters.base import BackfillPage, BaseAdapter, SourceItem, canonicalize_url
+from cscec import extract_pdf_text, parse_cscec_organization
 
 
 NEWS_SECTION_TERMS = (
@@ -21,6 +21,13 @@ ARTICLE_PATH_RE = re.compile(
 )
 INDEX_WORDS = {"首页", "更多", "返回", "下一页", "上一页", "新闻中心", "公司要闻", "集团要闻"}
 WECHAT_HOSTS = {"mp.weixin.qq.com", "weixin.qq.com"}
+PDF_PATH_RE = re.compile(r"\.pdf(?:$|[?#])", re.I)
+GOVERNANCE_ANNOUNCEMENT_TERMS = (
+    "任免", "任命", "聘任", "离任", "辞任", "辞职", "退休", "免去",
+    "选举", "董事候选人", "职工代表董事", "高级管理人员", "董事会决议",
+    "组织架构", "机构调整", "名称变更", "更名", "股权划转", "设立", "注销",
+    "法定代表人",
+)
 
 
 class CSCECNewsAdapter(BaseAdapter):
@@ -192,6 +199,179 @@ class CSCECNewsAdapter(BaseAdapter):
         }
 
 
+class CSCECPDFAnnouncementAdapter(BaseAdapter):
+    """Extract CSCEC stock disclosures whose detail pages are PDF files.
+
+    The official announcement page renders every year in the initial HTML. A
+    regular crawl therefore selects the newest disclosures plus governance
+    disclosures, while archive backfill walks the full catalog in small
+    batches. PDF links remain the article's original URL for auditability.
+    """
+
+    _catalog_cache: list[SourceItem] | None = None
+
+    def fetch_list(self, page: int = 1) -> list[SourceItem]:
+        if page != 1:
+            return []
+        catalog = self._load_catalog()
+        recent_limit = max(1, int(self.config.get("recent_limit", 25)))
+        priority_limit = max(0, int(self.config.get("priority_limit", 35)))
+        priority_days = max(1, int(self.config.get("priority_lookback_days", 730)))
+        cutoff = datetime.now(timezone.utc) - timedelta(days=priority_days)
+        selected = list(catalog[:recent_limit])
+        priority = [
+            item
+            for item in catalog
+            if any(term in item.title for term in GOVERNANCE_ANNOUNCEMENT_TERMS)
+            and (item.published_at is None or item.published_at >= cutoff)
+        ][:priority_limit]
+        return _unique_items([*selected, *priority])
+
+    def fetch_backfill(self, page: int = 1, cursor: str | None = None) -> BackfillPage:
+        catalog = self._load_catalog()
+        offset = int(cursor) if cursor and cursor.isdigit() else max(0, page - 1) * int(
+            self.config.get("backfill_batch_size", 10)
+        )
+        batch_size = max(1, min(25, int(self.config.get("backfill_batch_size", 10))))
+        batch = catalog[offset:offset + batch_size]
+        detailed: list[SourceItem] = []
+        for item in batch:
+            try:
+                detailed.append(self.fetch_detail(item))
+            except (requests.RequestException, PermissionError):
+                detailed.append(item)
+        next_offset = offset + len(batch)
+        exhausted = not batch or next_offset >= len(catalog)
+        return BackfillPage(
+            items=detailed,
+            next_cursor=None if exhausted else str(next_offset),
+            exhausted=exhausted,
+        )
+
+    def _load_catalog(self) -> list[SourceItem]:
+        if self._catalog_cache is not None:
+            return self._catalog_cache
+        endpoint = self.config.get("endpoint", self.source_url)
+        response = self._get(endpoint)
+        soup = BeautifulSoup(_response_text(response), "html.parser")
+        selector = self.config.get("item_selector", "ul.yxj-list li")
+        allowed_host = urlparse(response.url).hostname
+        rows: list[SourceItem] = []
+        for node in soup.select(selector):
+            anchor = node.select_one("a[href]") if node.name != "a" else node
+            if not anchor:
+                continue
+            href = (anchor.get("href") or "").strip()
+            if not PDF_PATH_RE.search(href):
+                continue
+            url = canonicalize_url(urljoin(response.url, href))
+            if urlparse(url).hostname != allowed_host:
+                continue
+            title = _clean_text(anchor.get("title") or anchor.get_text(" ", strip=True))
+            if len(title) < 4:
+                continue
+            date_node = node.select_one("time, span, .date, .time, [class*='date'], [class*='time']")
+            date_text = (
+                date_node.get("datetime") or date_node.get_text(" ", strip=True)
+                if date_node
+                else node.get_text(" ", strip=True)
+            )
+            item = self.normalize(SourceItem(
+                title=title,
+                url=url,
+                published_at=_parse_cscec_date(date_text),
+                excerpt=f"中国建筑官方公司公告：{title}",
+                language="zh",
+                raw={
+                    "list_page_url": response.url,
+                    "official_index_url": response.url,
+                    "document_format": "pdf",
+                    "pdf_url": url,
+                    "immutable_document": True,
+                    "pdf_text_status": "pending",
+                },
+            ))
+            if self.validate(item):
+                rows.append(item)
+        self._catalog_cache = sorted(
+            _unique_items(rows),
+            key=lambda item: item.published_at or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True,
+        )
+        return self._catalog_cache
+
+    def fetch_detail(self, item: SourceItem) -> SourceItem:
+        response = self._get(item.url, stream=True)
+        content_type = response.headers.get("content-type", "").lower()
+        max_pdf_bytes = max(100_000, int(self.config.get("max_pdf_bytes", 15_000_000)))
+        declared_length = int(response.headers.get("content-length") or 0)
+        if declared_length > max_pdf_bytes:
+            response.close()
+            raise requests.RequestException(
+                f"PDF exceeds configured limit ({declared_length} > {max_pdf_bytes} bytes)"
+            )
+        payload = bytearray()
+        if isinstance(response._content, bytes):
+            payload.extend(response.content)
+        else:
+            for chunk in response.iter_content(65_536):
+                payload.extend(chunk)
+                if len(payload) > max_pdf_bytes:
+                    response.close()
+                    raise requests.RequestException(
+                        f"PDF exceeds configured limit ({max_pdf_bytes} bytes)"
+                    )
+        if len(payload) > max_pdf_bytes:
+            response.close()
+            raise requests.RequestException(
+                f"PDF exceeds configured limit ({max_pdf_bytes} bytes)"
+            )
+        response.close()
+        if "pdf" not in content_type and not bytes(payload).startswith(b"%PDF"):
+            raise requests.RequestException(
+                f"announcement link did not return a PDF ({content_type or 'unknown content type'})"
+            )
+        item.raw.update({
+            "pdf_content_type": content_type or "application/pdf",
+            "pdf_size_bytes": len(payload),
+        })
+        try:
+            text = extract_pdf_text(
+                bytes(payload),
+                max_pages=max(1, int(self.config.get("max_pdf_pages", 100))),
+            )
+        except Exception as exc:
+            item.raw.update({
+                "pdf_text_status": "parse_failed",
+                "pdf_text_error": f"{exc.__class__.__name__}: {str(exc)[:300]}",
+            })
+            item.excerpt = (
+                f"中国建筑官方公司公告：{item.title}。PDF 已获取，但正文解析失败，"
+                "需人工核验或 OCR。"
+            )
+            return self.normalize(item)
+        if text:
+            item.raw["pdf_text_status"] = "extracted"
+            item.raw["pdf_text_length"] = len(text)
+            item.excerpt = text
+        else:
+            item.raw["pdf_text_status"] = "requires_ocr"
+            item.excerpt = (
+                f"中国建筑官方公司公告：{item.title}。该 PDF 未包含可提取文本，"
+                "可能为扫描件，需 OCR 或人工核验。"
+            )
+        return self.normalize(item)
+
+    def capabilities(self) -> dict:
+        return {
+            "pagination": False,
+            "backfill": True,
+            "pdf_text_extraction": True,
+            "scanned_pdf_detection": True,
+            "method": self.__class__.__name__,
+        }
+
+
 class CSCECOrganizationAdapter(BaseAdapter):
     """Organization discovery is isolated from news ingestion."""
 
@@ -230,6 +410,13 @@ def _response_text(response: requests.Response) -> str:
 
 def _clean_text(value: str | None) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
+
+
+def _unique_items(items: list[SourceItem]) -> list[SourceItem]:
+    unique: dict[str, SourceItem] = {}
+    for item in items:
+        unique[item.url] = item
+    return list(unique.values())
 
 
 def _parse_cscec_date(value: str | None) -> datetime | None:
