@@ -49,6 +49,10 @@ ENTITY_FIELDS = {
 ROLE_WORDS = (
     "党委书记",
     "党委副书记",
+    "独立董事",
+    "职工代表董事",
+    "董事会秘书",
+    "高级管理人员",
     "董事长",
     "副董事长",
     "总经理",
@@ -278,6 +282,11 @@ def classify_leadership_event(text: str) -> dict[str, Any] | None:
     if appointment_type is None:
         return None
     person_patterns = (
+        r"(?:独立董事|职工代表董事|董事|监事|高级管理人员|副总经理|总经理)"
+        r"\s*([\u4e00-\u9fff·]{2,4})(?:先生|女士|同志)?"
+        r"(?:提交.{0,30}?(?:辞职报告|辞任申请)|申请辞去|辞任|辞去|离任)",
+        r"([\u4e00-\u9fff·]{2,4})(?:先生|女士|同志)?"
+        r"(?:提交.{0,30}?(?:辞职报告|辞任申请)|申请辞去|辞任|辞去|离任)",
         r"(?:任命|聘任|免去|调任|当选|增补)\s*([\u4e00-\u9fff]{2,4})(?:为|任|担任)",
         r"([\u4e00-\u9fff]{2,4})(?:同志)?(?:任|担任|辞任|辞去|不再担任)",
         r"(?:董事长|总经理|党委书记|党委副书记|副总经理|总工程师|总会计师)([\u4e00-\u9fff]{2,4})(?=调研|会见|出席|访问|赴|$)",
@@ -287,8 +296,19 @@ def classify_leadership_event(text: str) -> dict[str, Any] | None:
         (match.group(1) for pattern in person_patterns if (match := re.search(pattern, compact))),
         None,
     )
-    title_match = re.search("|".join(sorted(ROLE_WORDS, key=len, reverse=True)), compact)
-    title = title_match.group(0) if title_match else None
+    role_pattern = "|".join(sorted(ROLE_WORDS, key=len, reverse=True))
+    title = None
+    if person_name:
+        escaped_name = re.escape(person_name)
+        nearby_role = re.search(
+            rf"({role_pattern}).{{0,12}}{escaped_name}|{escaped_name}.{{0,12}}({role_pattern})",
+            compact,
+        )
+        if nearby_role:
+            title = nearby_role.group(1) or nearby_role.group(2)
+    if title is None:
+        title_match = re.search(role_pattern, compact)
+        title = title_match.group(0) if title_match else None
     role_change = appointment_type in {kind for kind, _ in APPOINTMENT_RULES}
     return {
         "person_name": person_name,
@@ -438,8 +458,15 @@ def is_safe_official_link(url: str | None) -> bool:
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
-def extract_pdf_text(content: bytes) -> str:
+def extract_pdf_text(content: bytes, max_pages: int = 100) -> str:
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(content))
-    return "\n".join((page.extract_text() or "").strip() for page in reader.pages).strip()
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            return ""
+    pages = reader.pages[:max_pages]
+    text = "\n".join((page.extract_text() or "").strip() for page in pages).strip()
+    return re.sub(r"[ \t]+", " ", text)
