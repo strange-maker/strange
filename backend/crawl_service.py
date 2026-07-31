@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import requests
 from sqlalchemy.orm import Session
 
 from adapters import build_adapter
@@ -22,7 +23,20 @@ def execute_crawl(db: Session, source: Source, job: CrawlJob | None = None, retr
         adapter=build_adapter(source.source_name,source.source_url,source.adapter_config)
         items=adapter.fetch_list(); run.fetched_count=len(items)
         for item in items:
-            detailed=adapter.fetch_detail(item) if source.adapter_config.get("fetch_detail") else item
+            detailed=item
+            if source.adapter_config.get("fetch_detail"):
+                try:
+                    detailed=adapter.fetch_detail(item)
+                except (requests.RequestException, PermissionError) as exc:
+                    # Public index pages occasionally keep one stale or
+                    # temporarily unavailable detail URL. Keep the verified
+                    # list metadata and continue the rest of the batch.
+                    db.add(CrawlError(
+                        crawl_run_id=run.id,
+                        error_type=f"Detail{exc.__class__.__name__}",
+                        message=str(exc)[:4000],
+                        details={"source":source.source_name,"url":item.url,"fallback":"list_metadata"},
+                    ))
             result=ingest_item(db,source,detailed)
             if result == "new": run.new_count += 1
             elif result == "updated": run.updated_count += 1
