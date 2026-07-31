@@ -2,9 +2,28 @@ from __future__ import annotations
 
 from adapters.feeds import RSSAdapter
 from adapters.official import HTMLListAdapter, SitemapAdapter, WorldBankDocumentsAdapter
+from adapters.cscec import CSCECNewsAdapter, CSCECOrganizationAdapter
 
 
 ADAPTER_CONFIGS: dict[str, dict] = {
+    "中国建筑企业动态":{
+        "class":CSCECNewsAdapter,
+        "endpoint":"https://www.cscec.com/xwzx_new/zqydt_new/",
+        "page_pattern":"https://www.cscec.com/xwzx_new/zqydt_new/index_{index}.html",
+        "item_selector":".list li, .news-list li, ul li",
+        "content_selector":".TRS_Editor, .article-content, article, main",
+        "fetch_detail":True,
+        "max_pages":50,
+        "backfill_page_limit":50,
+        "schedule_minutes":180,
+        "initial_status":"pending_adapter",
+    },
+    "中国建筑组织架构":{
+        "class":CSCECOrganizationAdapter,
+        "endpoint":"https://www.cscec.com/fzlm_new/zjwzq/",
+        "schedule_minutes":1440,
+        "initial_status":"pending_adapter",
+    },
     "World Bank Projects & Procurement":{"class":WorldBankDocumentsAdapter,"endpoint":"https://search.worldbank.org/api/v3/wds","schedule_minutes":180,"max_pages":50,"supports_backfill":True,"backfill_page_limit":50},
     "Data Center Dynamics":{"class":RSSAdapter,"endpoint":"https://www.datacenterdynamics.com/en/rss/","schedule_minutes":30},
     "Data Center Knowledge":{"class":RSSAdapter,"endpoint":"https://www.datacenterknowledge.com/rss.xml","schedule_minutes":30},
