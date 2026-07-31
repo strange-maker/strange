@@ -1,0 +1,651 @@
+schema_version: 1
+authority:
+  name: 中国建筑官网组织架构及网站群
+  url: https://www.cscec.com/fzlm_new/zjwzq/
+  checked_at: null
+
+defaults:
+  domestic: &domestic
+    aliases: []
+    parent_entity_id: cscec-listed
+    entity_level: subsidiary
+    entity_type: operating_company
+    stock_code: null
+    official_url: null
+    country: 中国
+    region: 中国
+    overseas: false
+    verification_status: pending_verification
+    verification_source: https://www.cscec.com/fzlm_new/zjwzq/
+    active: true
+    notes: 待通过中国建筑网站群或企业官方披露继续核验。
+  verified_domestic: &verified_domestic
+    <<: *domestic
+    verification_status: verified
+    notes: 已配置中国建筑网站群或企业官方入口；仍需定期执行页面差异检测。
+  overseas: &overseas
+    aliases: []
+    parent_entity_id: cscec-listed
+    entity_level: overseas_entity
+    entity_type: overseas_branch
+    stock_code: null
+    official_url: null
+    country: null
+    region: null
+    overseas: true
+    verification_status: no_independent_site
+    verification_source: https://www.cscec.com/fzlm_new/zjwzq/
+    active: true
+    notes: 未发现经官方核验的独立官网，不得猜测或生成域名。
+
+entities:
+  - <<: *verified_domestic
+    entity_id: cscec-group
+    canonical_name: 中国建筑集团有限公司
+    short_name: 中建集团
+    aliases: [中国建筑集团, CSCEC Group]
+    parent_entity_id: null
+    entity_level: group
+    entity_type: central_soe
+    official_url: https://www.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-listed
+    canonical_name: 中国建筑股份有限公司
+    short_name: 中国建筑
+    aliases: [中建股份, CSCEC]
+    parent_entity_id: cscec-group
+    entity_level: listed_platform
+    entity_type: listed_company
+    stock_code: 601668.SH
+    official_url: https://www.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cohl
+    canonical_name: 中国海外集团有限公司
+    short_name: 中国海外集团
+    aliases: [中海集团, COHL]
+    parent_entity_id: cscec-group
+    entity_level: group_platform
+    entity_type: overseas_holding
+    official_url: https://www.cohl.com/
+  - <<: *verified_domestic
+    entity_id: coli
+    canonical_name: 中国海外发展有限公司
+    short_name: 中国海外发展
+    aliases: [中海发展, COLI]
+    parent_entity_id: cohl
+    entity_level: listed_platform
+    entity_type: listed_company
+    stock_code: 00688.HK
+    official_url: https://www.coli.com.hk/
+  - <<: *verified_domestic
+    entity_id: cogogl
+    canonical_name: 中国海外宏洋集团有限公司
+    short_name: 中国海外宏洋
+    aliases: [中海宏洋, COGOGL]
+    parent_entity_id: cohl
+    entity_level: listed_platform
+    entity_type: listed_company
+    stock_code: 00081.HK
+    official_url: https://www.cogogl.com.hk/investors/
+  - <<: *verified_domestic
+    entity_id: csci-hk
+    canonical_name: 中国建筑国际集团有限公司
+    short_name: 中国建筑国际
+    aliases: [中建国际, CSCI]
+    parent_entity_id: cohl
+    entity_level: listed_platform
+    entity_type: listed_company
+    stock_code: 03311.HK
+    official_url: https://www.csci.com.hk/
+  - <<: *verified_domestic
+    entity_id: cscec-far-east
+    canonical_name: 中国建筑兴业集团有限公司
+    short_name: 中国建筑兴业
+    aliases: [远东环球集团有限公司, 远东环球, Far East Global]
+    parent_entity_id: cohl
+    entity_level: listed_platform
+    entity_type: listed_company
+    stock_code: 00830.HK
+    official_url: https://www.fareastglobal.com/
+    verification_status: renamed
+    notes: 当前正式名称与历史名称必须分开记录，历史名称仅作为别名用于匹配。
+  - <<: *verified_domestic
+    entity_id: copm
+    canonical_name: 中海物业集团有限公司
+    short_name: 中海物业
+    aliases: [COPM]
+    parent_entity_id: cohl
+    entity_level: listed_platform
+    entity_type: listed_company
+    stock_code: 02669.HK
+    official_url: https://www.copm.com.cn/
+  - <<: *domestic
+    entity_id: cohl-investment
+    canonical_name: 中海投资发展集团有限公司
+    short_name: 中海投资
+    aliases: []
+    parent_entity_id: cohl
+    entity_level: group_platform
+    entity_type: investment_platform
+
+  - <<: *verified_domestic
+    entity_id: cscec-1b
+    canonical_name: 中国建筑一局（集团）有限公司
+    short_name: 中建一局
+    aliases: [中国建筑一局]
+    entity_type: engineering_bureau
+    official_url: https://1bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-2b
+    canonical_name: 中国建筑第二工程局有限公司
+    short_name: 中建二局
+    aliases: [中国建筑二局]
+    entity_type: engineering_bureau
+    official_url: https://2bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-3b
+    canonical_name: 中国建筑第三工程局有限公司
+    short_name: 中建三局
+    aliases: [中国建筑三局]
+    entity_type: engineering_bureau
+    official_url: https://3bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-4b
+    canonical_name: 中国建筑第四工程局有限公司
+    short_name: 中建四局
+    aliases: [中国建筑四局]
+    entity_type: engineering_bureau
+    official_url: https://4bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-5b
+    canonical_name: 中国建筑第五工程局有限公司
+    short_name: 中建五局
+    aliases: [中国建筑五局]
+    entity_type: engineering_bureau
+    official_url: https://5bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-6b
+    canonical_name: 中国建筑第六工程局有限公司
+    short_name: 中建六局
+    aliases: [中国建筑六局]
+    entity_type: engineering_bureau
+    official_url: https://6bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-silk-road
+    canonical_name: 中建丝路建设投资有限公司
+    short_name: 中建丝路
+    aliases: [中建丝路]
+    entity_type: regional_investment_platform
+    official_url: https://sr.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-7b
+    canonical_name: 中国建筑第七工程局有限公司
+    short_name: 中建七局
+    aliases: [中国建筑七局]
+    entity_type: engineering_bureau
+    official_url: https://7bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-8b
+    canonical_name: 中国建筑第八工程局有限公司
+    short_name: 中建八局
+    aliases: [中国建筑八局]
+    entity_type: engineering_bureau
+    official_url: https://8bur.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-xinjiang
+    canonical_name: 中建新疆建工（集团）有限公司
+    short_name: 中建新疆建工
+    aliases: [新疆建工]
+    entity_type: engineering_bureau
+    official_url: https://xjco.cscec.com/
+
+  - <<: *verified_domestic
+    entity_id: cscec-technology
+    canonical_name: 中建科技集团有限公司
+    short_name: 中建科技
+    aliases: []
+    entity_type: technology_company
+    official_url: https://ccstc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-design
+    canonical_name: 中国中建设计研究院有限公司
+    short_name: 中建设计研究院
+    aliases: [中国中建设计研究院]
+    entity_type: design_institute
+    official_url: https://ccdc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-ne-design
+    canonical_name: 中国建筑东北设计研究院有限公司
+    short_name: 东北院
+    aliases: [中建东北院]
+    entity_type: design_institute
+    official_url: https://nein.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-nw-design
+    canonical_name: 中国建筑西北设计研究院有限公司
+    short_name: 西北院
+    aliases: [中建西北院]
+    entity_type: design_institute
+    official_url: https://nwin.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-sw-architecture
+    canonical_name: 中国建筑西南设计研究院有限公司
+    short_name: 西南建筑设计院
+    aliases: [中建西南院]
+    entity_type: design_institute
+    official_url: https://www.xnjz.com/
+  - <<: *verified_domestic
+    entity_id: cscec-sw-survey
+    canonical_name: 中国建筑西南勘察设计研究院有限公司
+    short_name: 西南勘察设计院
+    aliases: [中建西勘院]
+    entity_type: design_institute
+    official_url: https://swin.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-sh-design
+    canonical_name: 中国建筑上海设计研究院有限公司
+    short_name: 上海设计院
+    aliases: [中建上海院]
+    entity_type: design_institute
+    official_url: https://shin.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-municipal-nw
+    canonical_name: 中国市政工程西北设计研究院有限公司
+    short_name: 市政西北院
+    aliases: []
+    entity_type: design_institute
+    official_url: https://aeco.cscec.com/
+  - <<: *domestic
+    entity_id: cscec-industrial-research
+    canonical_name: 中建工程产业技术研究院有限公司
+    short_name: 中建产研院
+    aliases: []
+    entity_type: research_institute
+  - <<: *domestic
+    entity_id: cscec-innovation
+    canonical_name: 中国中建科创集团有限公司
+    short_name: 中建科创
+    aliases: []
+    entity_type: technology_company
+  - <<: *domestic
+    entity_id: cscec-digital
+    canonical_name: 中建数字科技有限公司
+    short_name: 中建数科
+    aliases: []
+    entity_type: technology_company
+
+  - <<: *verified_domestic
+    entity_id: cscec-infrastructure
+    canonical_name: 中国建设基础设施有限公司
+    short_name: 中建基础
+    aliases: []
+    entity_type: infrastructure_platform
+    official_url: https://ccic.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-fangcheng
+    canonical_name: 中建方程投资发展集团有限公司
+    short_name: 中建方程
+    aliases: []
+    entity_type: investment_platform
+    official_url: https://ccfc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-capital
+    canonical_name: 中建资本控股有限公司
+    short_name: 中建资本
+    aliases: []
+    entity_type: finance_platform
+    official_url: https://zjzb.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-finance
+    canonical_name: 中建财务有限公司
+    short_name: 中建财务
+    aliases: []
+    entity_type: finance_platform
+    official_url: https://cscfc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-communications
+    canonical_name: 中建交通建设集团有限公司
+    short_name: 中建交通
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://comm.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-decoration
+    canonical_name: 中国建筑装饰集团有限公司
+    short_name: 中建装饰
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://deco.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-steel
+    canonical_name: 中建科工集团有限公司
+    short_name: 中建科工
+    aliases: [中建钢构]
+    entity_type: specialist_contractor
+    official_url: https://sstr.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-installation
+    canonical_name: 中建安装集团有限公司
+    short_name: 中建安装
+    aliases: [中建安装工程有限公司]
+    entity_type: specialist_contractor
+    official_url: https://inco.cscec.com/
+    notes: 官方当前名称与历史或易混名称分开记录，历史名称仅用于别名匹配。
+  - <<: *verified_domestic
+    entity_id: cscec-western-construction
+    canonical_name: 中建西部建设股份有限公司
+    short_name: 中建西部建设
+    aliases: []
+    entity_type: listed_company
+    stock_code: 002302.SZ
+    official_url: https://cwcg.cscec.com/
+  - <<: *domestic
+    entity_id: cscec-port-hang
+    canonical_name: 中建港航局集团有限公司
+    short_name: 中建港航局
+    aliases: []
+    entity_type: specialist_contractor
+    notes: 与中建筑港、中建港务分别建模，禁止仅凭名称相似自动合并。
+  - <<: *verified_domestic
+    entity_id: cscec-port
+    canonical_name: 中建筑港集团有限公司
+    short_name: 中建筑港
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://port.cscec.com/
+    notes: 与中建港务、中建港航局分别建模。
+  - <<: *verified_domestic
+    entity_id: cscec-harbour
+    canonical_name: 中建港务建设有限公司
+    short_name: 中建港务
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://cschcc.cscec.com/
+    notes: 与中建筑港、中建港航局分别建模。
+  - <<: *verified_domestic
+    entity_id: cscec-development
+    canonical_name: 中国建筑发展有限公司
+    short_name: 中建发展
+    aliases: []
+    entity_type: operating_company
+    official_url: https://cscdc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-south-investment
+    canonical_name: 中建南方投资有限公司
+    short_name: 中建南方
+    aliases: []
+    entity_type: regional_investment_platform
+    official_url: https://south.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-yangtze-investment
+    canonical_name: 中建长江建设投资有限公司
+    short_name: 中建长江
+    aliases: []
+    entity_type: regional_investment_platform
+    official_url: https://zjcj.cscec.com/
+  - <<: *domestic
+    entity_id: cscec-north-investment
+    canonical_name: 中建北方建设投资有限公司
+    short_name: 中建北方
+    aliases: []
+    entity_type: regional_investment_platform
+  - <<: *verified_domestic
+    entity_id: cscec-rail
+    canonical_name: 中建铁路投资建设集团有限公司
+    short_name: 中建铁路
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://rail.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-underground
+    canonical_name: 中建地下空间有限公司
+    short_name: 中建地下空间
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://ccusc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-strait
+    canonical_name: 中建海峡建设发展有限公司
+    short_name: 中建海峡
+    aliases: []
+    entity_type: regional_company
+    official_url: https://scdc.cscec.com/
+  - <<: *verified_domestic
+    entity_id: cscec-power
+    canonical_name: 中建电力建设有限公司
+    short_name: 中建电力
+    aliases: []
+    entity_type: specialist_contractor
+    official_url: https://epwr.cscec.com/
+  - <<: *domestic
+    entity_id: cscec-eco
+    canonical_name: 中建生态环境集团有限公司
+    short_name: 中建生态环境
+    aliases: []
+    entity_type: specialist_contractor
+  - <<: *domestic
+    entity_id: cscec-environment
+    canonical_name: 中建环能科技股份有限公司
+    short_name: 中建环能
+    aliases: []
+    entity_type: listed_company
+    stock_code: 300425.SZ
+  - <<: *verified_domestic
+    entity_id: cscec-international-construction
+    canonical_name: 中建国际建设有限公司
+    short_name: 中建国际建设
+    aliases: []
+    entity_type: international_contractor
+    official_url: https://csci.cscec.com/
+
+  - <<: *overseas
+    entity_id: cscec-algeria
+    canonical_name: 中国建筑股份有限公司阿尔及利亚公司
+    short_name: 中建阿尔及利亚
+    aliases: []
+    country: 阿尔及利亚
+    region: 非洲
+    official_url: https://www.cscec.dz/
+    verification_status: verified
+  - <<: *overseas
+    entity_id: cscec-usa
+    canonical_name: 中建美国有限公司
+    short_name: 中建美国
+    aliases: [China Construction America]
+    country: 美国
+    region: 北美
+    official_url: https://www.chinaconstruction.us/
+    verification_status: verified
+  - <<: *overseas
+    entity_id: cscec-singapore
+    canonical_name: 中国建筑（南洋）发展有限公司
+    short_name: 中建南洋
+    aliases: [中建新加坡]
+    country: 新加坡
+    region: 东南亚
+    official_url: https://cscecsingapore.cscec.com/
+    verification_status: verified
+  - <<: *overseas
+    entity_id: cscec-middle-east
+    canonical_name: 中建中东有限责任公司
+    short_name: 中建中东
+    aliases: []
+    country: 阿联酋
+    region: 中东
+    official_url: https://www.cscec.ae/
+    verification_status: verified
+  - <<: *overseas
+    entity_id: cscec-egypt
+    canonical_name: 中国建筑股份有限公司埃及分公司
+    short_name: 中建埃及
+    aliases: []
+    country: 埃及
+    region: 非洲
+  - <<: *overseas
+    entity_id: cscec-ethiopia
+    canonical_name: 中国建筑埃塞俄比亚有限公司
+    short_name: 中建埃塞俄比亚
+    aliases: []
+    country: 埃塞俄比亚
+    region: 非洲
+  - <<: *overseas
+    entity_id: cscec-thailand
+    canonical_name: 中国建筑工程（泰国）有限公司
+    short_name: 中建泰国
+    aliases: []
+    country: 泰国
+    region: 东南亚
+  - <<: *overseas
+    entity_id: cscec-kuwait
+    canonical_name: 中建科威特独资公司
+    short_name: 中建科威特
+    aliases: []
+    country: 科威特
+    region: 中东
+  - <<: *overseas
+    entity_id: cscec-indonesia
+    canonical_name: 中国建筑股份有限公司印尼代表处
+    short_name: 中建印尼
+    aliases: []
+    country: 印度尼西亚
+    region: 东南亚
+  - <<: *overseas
+    entity_id: cscec-malaysia
+    canonical_name: 中国建筑马来西亚有限公司
+    short_name: 中建马来西亚
+    aliases: []
+    country: 马来西亚
+    region: 东南亚
+  - <<: *overseas
+    entity_id: cscec-philippines
+    canonical_name: 中建菲律宾分公司
+    short_name: 中建菲律宾
+    aliases: []
+    country: 菲律宾
+    region: 东南亚
+  - <<: *overseas
+    entity_id: cscec-vietnam
+    canonical_name: 中国建筑股份有限公司驻河内代表处
+    short_name: 中建越南
+    aliases: []
+    country: 越南
+    region: 东南亚
+  - <<: *overseas
+    entity_id: cscec-cambodia
+    canonical_name: 中国建筑柬埔寨有限公司
+    short_name: 中建柬埔寨
+    aliases: []
+    country: 柬埔寨
+    region: 东南亚
+  - <<: *overseas
+    entity_id: cscec-pakistan
+    canonical_name: 中国建筑巴基斯坦有限责任公司
+    short_name: 中建巴基斯坦
+    aliases: []
+    country: 巴基斯坦
+    region: 南亚
+  - <<: *overseas
+    entity_id: cscec-bangladesh
+    canonical_name: 中国建筑股份有限公司孟加拉分公司
+    short_name: 中建孟加拉
+    aliases: []
+    country: 孟加拉国
+    region: 南亚
+  - <<: *overseas
+    entity_id: cscec-saudi
+    canonical_name: 中国建筑股份有限公司沙特分公司
+    short_name: 中建沙特
+    aliases: []
+    country: 沙特阿拉伯
+    region: 中东
+  - <<: *overseas
+    entity_id: cscec-israel
+    canonical_name: 中国建筑股份有限公司以色列分公司
+    short_name: 中建以色列
+    aliases: []
+    country: 以色列
+    region: 中东
+  - <<: *overseas
+    entity_id: cscec-iraq
+    canonical_name: 中国建筑股份有限公司伊拉克分公司
+    short_name: 中建伊拉克
+    aliases: []
+    country: 伊拉克
+    region: 中东
+  - <<: *overseas
+    entity_id: cscec-kazakhstan
+    canonical_name: 中国建筑哈萨克斯坦分公司
+    short_name: 中建哈萨克斯坦
+    aliases: []
+    country: 哈萨克斯坦
+    region: 中亚
+  - <<: *overseas
+    entity_id: cscec-korea
+    canonical_name: 中国建筑股份有限公司韩国分公司
+    short_name: 中建韩国
+    aliases: []
+    country: 韩国
+    region: 东亚
+  - <<: *overseas
+    entity_id: cscec-mongolia
+    canonical_name: 中建股份蒙古国有限责任公司
+    short_name: 中建蒙古
+    aliases: []
+    country: 蒙古国
+    region: 东亚
+  - <<: *overseas
+    entity_id: cscec-cote-divoire
+    canonical_name: 中国建筑股份有限公司科特迪瓦分公司
+    short_name: 中建科特迪瓦
+    aliases: []
+    country: 科特迪瓦
+    region: 非洲
+  - <<: *overseas
+    entity_id: cscec-kenya
+    canonical_name: 中国建筑肯尼亚有限责任公司
+    short_name: 中建肯尼亚
+    aliases: []
+    country: 肯尼亚
+    region: 非洲
+  - <<: *overseas
+    entity_id: cscec-south-africa
+    canonical_name: 中国建筑南非有限公司
+    short_name: 中建南非
+    aliases: []
+    country: 南非
+    region: 非洲
+  - <<: *overseas
+    entity_id: cscec-morocco
+    canonical_name: 中建摩洛哥股份公司
+    short_name: 中建摩洛哥
+    aliases: []
+    country: 摩洛哥
+    region: 非洲
+  - <<: *overseas
+    entity_id: cscec-serbia
+    canonical_name: 中国建筑股份有限公司塞尔维亚代表处
+    short_name: 中建塞尔维亚
+    aliases: []
+    country: 塞尔维亚
+    region: 欧洲
+  - <<: *overseas
+    entity_id: cscec-mediterranean
+    canonical_name: 中建地中海控股简易股份公司
+    short_name: 中建地中海
+    aliases: []
+    country: 法国
+    region: 欧洲
+  - <<: *overseas
+    entity_id: cscec-png
+    canonical_name: 中国建筑股份有限公司巴新分公司
+    short_name: 中建巴新
+    aliases: []
+    country: 巴布亚新几内亚
+    region: 大洋洲
+  - <<: *overseas
+    entity_id: cscec-bolivia
+    canonical_name: 中国建筑股份有限公司玻利维亚分公司
+    short_name: 中建玻利维亚
+    aliases: []
+    country: 玻利维亚
+    region: 拉美
