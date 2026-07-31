@@ -22,8 +22,9 @@ def test_alembic_upgrade_from_empty_database(tmp_path):
     assert {
         "users","articles","sources","crawl_runs","audit_logs","canonical_events",
         "canonical_projects","crawl_batches","backfill_runs","source_capability_checks",
+        "cscec_entities","page_snapshots","page_diffs","cscec_leadership_events","cscec_org_events",
     }.issubset(tables)
-    assert {"backfill_enabled","backfill_status","backfill_cursor"}.issubset(source_columns)
+    assert {"backfill_enabled","backfill_status","backfill_cursor","entity_id"}.issubset(source_columns)
     assert {"intelligence_types","ka_candidates","canonical_event_id","date_verification_status"}.issubset(article_columns)
 
 

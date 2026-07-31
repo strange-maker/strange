@@ -16,13 +16,14 @@ from database import SessionLocal, engine
 from models import Base, Role, User
 from security import hash_password
 from source_service import ensure_roles, sync_sources
+from cscec import sync_cscec_entities
 
 
 @pytest.fixture(autouse=True)
 def clean_database():
     Base.metadata.drop_all(engine); Base.metadata.create_all(engine)
     with SessionLocal() as db:
-        ensure_roles(db); sync_sources(db)
+        ensure_roles(db); sync_cscec_entities(db); sync_sources(db)
         role=db.scalar(select(Role).where(Role.name == "admin"))
         db.add(User(email="admin@example.com",full_name="测试管理员",password_hash=hash_password("A-secure-test-password!"),role_id=role.id)); db.commit()
     yield
