@@ -233,7 +233,7 @@ entities:
     short_name: 西南建筑设计院
     aliases: [中建西南院]
     entity_type: design_institute
-    official_url: https://www.xnjz.com/
+    official_url: https://xnjz.cscec.com/
   - <<: *verified_domestic
     entity_id: cscec-sw-survey
     canonical_name: 中国建筑西南勘察设计研究院有限公司
