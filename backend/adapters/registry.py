@@ -5,6 +5,29 @@ from adapters.official import HTMLListAdapter, SitemapAdapter, WorldBankDocument
 from adapters.cscec import CSCECNewsAdapter, CSCECOrganizationAdapter
 
 
+CSCEC_AUTO_NEWS_SOURCES = {
+    "中国建筑官网",
+    "中国建筑新闻中心",
+    "中国建筑投资者服务",
+    "中建国际新闻中心",
+    "中国海外集团新闻",
+    "中建一局新闻",
+    "中建二局新闻",
+    "中建三局新闻",
+    "中建四局新闻",
+    "中建五局新闻",
+    "中建六局新闻",
+    "中建七局新闻",
+    "中建八局新闻",
+    "中建新疆建工新闻",
+    "中建设计研究院新闻",
+    "中建西南院新闻",
+    "中建西北院新闻",
+    "中建安装新闻",
+    "中建港航局新闻",
+}
+
+
 ADAPTER_CONFIGS: dict[str, dict] = {
     "中国建筑企业动态":{
         "class":CSCECNewsAdapter,
@@ -16,13 +39,13 @@ ADAPTER_CONFIGS: dict[str, dict] = {
         "max_pages":50,
         "backfill_page_limit":50,
         "schedule_minutes":180,
-        "initial_status":"pending_adapter",
+        "initial_status":"active",
     },
     "中国建筑组织架构":{
         "class":CSCECOrganizationAdapter,
         "endpoint":"https://www.cscec.com/fzlm_new/zjwzq/",
         "schedule_minutes":1440,
-        "initial_status":"pending_adapter",
+        "initial_status":"active",
     },
     "World Bank Projects & Procurement":{"class":WorldBankDocumentsAdapter,"endpoint":"https://search.worldbank.org/api/v3/wds","schedule_minutes":180,"max_pages":50,"supports_backfill":True,"backfill_page_limit":50},
     "Data Center Dynamics":{"class":RSSAdapter,"endpoint":"https://www.datacenterdynamics.com/en/rss/","schedule_minutes":30},
@@ -69,8 +92,41 @@ ADAPTER_CONFIGS: dict[str, dict] = {
 }
 
 
+def get_adapter_definition(
+    source_name: str,
+    source_url: str | None = None,
+    metadata: dict | None = None,
+) -> dict | None:
+    definition = ADAPTER_CONFIGS.get(source_name)
+    if definition:
+        return dict(definition)
+    metadata = metadata or {}
+    is_cscec_news = source_name in CSCEC_AUTO_NEWS_SOURCES
+    is_cscec_official_html = (
+        metadata.get("ka_focus") == "cscec"
+        and metadata.get("source_type") == "official"
+        and metadata.get("crawl_method") == "html"
+        and ("新闻" in source_name or source_name == "中国建筑官网")
+    )
+    if not (is_cscec_news or is_cscec_official_html):
+        return None
+    return {
+        "class": CSCECNewsAdapter,
+        "adapter_family": "cscec_site",
+        "endpoint": source_url,
+        "auto_discover_news": True,
+        "include_wechat_index_leads": True,
+        "fetch_detail": True,
+        "max_pages": 1,
+        "schedule_minutes": 180,
+        "initial_status": "active",
+    }
+
+
 def build_adapter(source_name: str, source_url: str, stored_config: dict | None = None):
-    definition=ADAPTER_CONFIGS.get(source_name)
+    definition=get_adapter_definition(source_name,source_url)
+    if not definition and (stored_config or {}).get("adapter_family") == "cscec_site":
+        definition=get_adapter_definition(source_name,source_url,{"ka_focus":"cscec","source_type":"official","crawl_method":"html"})
     if not definition: raise KeyError(f"no adapter registered for {source_name}")
     config={k:v for k,v in definition.items() if k not in {"class","initial_status"}}; config.update(stored_config or {})
     return definition["class"](source_url, config)
