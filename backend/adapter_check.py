@@ -5,7 +5,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from adapters.registry import ADAPTER_CONFIGS, build_adapter
+from adapters.registry import build_adapter, get_adapter_definition
 
 
 def check(name: str, url: str) -> dict:
@@ -19,9 +19,10 @@ def check(name: str, url: str) -> dict:
 
 if __name__ == "__main__":
     sources=json.loads((Path(__file__).resolve().parents[1]/"public"/"sources.yaml").read_text("utf-8"))
-    urls={x["source_name"]:x["source_url"] for x in sources}; results=[]
+    runnable=[x for x in sources if get_adapter_definition(x["source_name"],x["source_url"],x)]
+    urls={x["source_name"]:x["source_url"] for x in runnable}; results=[]
     with ThreadPoolExecutor(max_workers=4) as pool:
-        futures={pool.submit(check,name,urls[name]):name for name in ADAPTER_CONFIGS if name in urls}
+        futures={pool.submit(check,name,url):name for name,url in urls.items()}
         for future in as_completed(futures): results.append(future.result())
     results.sort(key=lambda x:x["source_name"])
     print(json.dumps({"checked":len(results),"passed":sum(x["ok"] for x in results),"results":results},ensure_ascii=False,indent=2))

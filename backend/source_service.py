@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from adapters.registry import ADAPTER_CONFIGS
+from adapters.registry import get_adapter_definition
 from intelligence import KA_MAPPINGS, STRONG_ALIASES, WEAK_ALIASES
 from models import KAAlias, KAEntity, KAGroup, Role, Source, utcnow
 
@@ -28,7 +28,8 @@ def adapter_status_for(item: dict) -> str:
     if not item["enabled"]: return "disabled"
     notes=item.get("notes", "").lower()
     if any(word in notes for word in ["订阅制", "付费", "授权"]): return "blocked"
-    if item["source_name"] in ADAPTER_CONFIGS: return ADAPTER_CONFIGS[item["source_name"]].get("initial_status","active")
+    definition=get_adapter_definition(item["source_name"],item["source_url"],item)
+    if definition: return definition.get("initial_status","active")
     return "pending_adapter"
 
 
@@ -47,26 +48,31 @@ def sync_sources(db: Session) -> int:
     payload=json.loads(SOURCES_PATH.read_text(encoding="utf-8")); count=0
     for item in payload:
         source=db.scalar(select(Source).where(Source.source_name == item["source_name"]))
-        definition=ADAPTER_CONFIGS.get(item["source_name"], {})
+        definition=get_adapter_definition(item["source_name"],item["source_url"],item) or {}
+        desired_status=adapter_status_for(item)
         values={
             "source_url":item["source_url"], "source_type":item["source_type"], "reliability_level":item["reliability_level"],
             "entity_id":item.get("entity_id"),
             "region_focus":item["region_focus"], "country_focus":item["country_focus"], "industry_focus":item["industry_focus"],
             "source_tags":source_tags_for(item),
             "crawl_method":item["crawl_method"], "adapter_key":item["source_name"] if definition else None,
-            "adapter_status":adapter_status_for(item), "adapter_config":{k:v for k,v in definition.items() if k not in {"class","schedule_minutes","initial_status"}},
+            "adapter_status":desired_status, "adapter_config":{k:v for k,v in definition.items() if k not in {"class","schedule_minutes","initial_status"}},
             "schedule_minutes":definition.get("schedule_minutes", schedule_for(item)),
-            "enabled":bool(item["enabled"] and adapter_status_for(item) in {"active","manual_only"}), "notes":item["notes"],
+            "enabled":bool(item["enabled"] and desired_status in {"active","manual_only"}), "notes":item["notes"],
             "backfill_enabled":bool(definition and item["crawl_method"] != "manual_import" and definition.get("initial_status", "active") == "active"),
             "backfill_page_limit":int(definition.get("backfill_page_limit", definition.get("max_pages", 25))) if definition else 25,
         }
         if source:
+            previous_status=source.adapter_status
             persisted_enabled=source.enabled
             persisted_schedule=source.schedule_minutes
             paused=source.adapter_status == "paused" and source.consecutive_failures >= 5 and values["adapter_status"] == "active"
             for key,value in values.items():
                 if key not in {"enabled","schedule_minutes","adapter_status","backfill_enabled","backfill_page_limit"}: setattr(source,key,value)
-            source.enabled=persisted_enabled
+            # A source that was unusable only because its adapter did not yet
+            # exist should become runnable when a verified adapter is shipped.
+            newly_adapted=previous_status in {"pending_adapter","disabled"} and values["adapter_status"] == "active"
+            source.enabled=values["enabled"] if newly_adapted else persisted_enabled
             source.schedule_minutes=persisted_schedule or values["schedule_minutes"]
             if source.backfill_status == "not_started":
                 source.backfill_enabled=values["backfill_enabled"]

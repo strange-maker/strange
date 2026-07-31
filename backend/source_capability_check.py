@@ -13,7 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from adapters import build_adapter
-from adapters.registry import ADAPTER_CONFIGS
+from adapters.registry import get_adapter_definition
 from config import get_settings
 
 
@@ -42,7 +42,7 @@ def check(item: dict,timeout: int) -> dict:
     session.headers.update({"User-Agent":settings.crawl_user_agent,"Accept":"text/html,application/rss+xml,application/xml;q=0.9,*/*;q=0.8"})
     parsed=urlparse(item["source_url"]); robots_url=f"{parsed.scheme}://{parsed.netloc}/robots.txt"
     try:
-        definition=ADAPTER_CONFIGS.get(item["source_name"])
+        definition=get_adapter_definition(item["source_name"],item["source_url"],item)
         if definition and definition.get("initial_status") != "blocked":
             result["test_method"].append("registered_adapter")
             adapter=build_adapter(item["source_name"],item["source_url"],item.get("adapter_config") or {})

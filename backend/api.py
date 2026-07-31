@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from redis import Redis
+import requests
 from sqlalchemy import String, and_, distinct, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -24,7 +25,7 @@ from models import (
     PolicyIntelligence, RefreshToken, ReviewRecord, Role, SavedSearch, Source,
     SourceCapabilityCheck, User, UserFavorite, UserReadStatus, utcnow,
 )
-from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
+from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualExtractRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
 from security import _as_utc, audit, consume_refresh_token, create_access_token, current_user, hash_password, issue_refresh_token, require_role, verify_password
 from source_service import ensure_roles, sync_ka_mappings, sync_sources
 from cscec import sync_cscec_entities
@@ -183,6 +184,17 @@ def manual_import(payload: ManualImport,request: Request,user: User=Depends(requ
     item=SourceItem(title=payload.title,url=str(payload.original_url),published_at=published_at,excerpt=(payload.content_text+" "+(payload.ocr_result or ""))[:6000],language="zh")
     result=ingest_item(db,source,item,True); db.commit(); audit(db,request,user,"article.manual_import","source",source.id,{"result":result})
     return {"result":result,"source_type":source.source_type,"verification_notice":"媒体线索，建议核验官方公告" if source.reliability_level != "high" else None}
+
+
+@router.post("/articles/manual-import/preview")
+def manual_import_preview(payload: ManualExtractRequest,user: User=Depends(require_role("analyst"))):
+    from manual_extract import extract_public_article
+    try:
+        return extract_public_article(str(payload.original_url),payload.import_type)
+    except PermissionError as exc:
+        raise HTTPException(403,str(exc)) from exc
+    except (ValueError,requests.RequestException) as exc:
+        raise HTTPException(422,str(exc)) from exc
 
 
 @router.put("/articles/{article_id}/favorite")

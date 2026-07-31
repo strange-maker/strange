@@ -48,6 +48,11 @@ class ManualImport(BaseModel):
     attachment_types: list[str] = Field(default_factory=list, max_length=20)
 
 
+class ManualExtractRequest(BaseModel):
+    original_url: HttpUrl
+    import_type: Literal["wechat", "web"] = "wechat"
+
+
 class SourceUpdate(BaseModel):
     enabled: bool | None = None
     schedule_minutes: int | None = Field(default=None, ge=15, le=10080)

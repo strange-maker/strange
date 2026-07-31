@@ -29,34 +29,40 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
     canonical=canonicalize_url(item.url)
     existing=db.scalar(select(Article).where(Article.canonical_url == canonical))
     if existing:
-        existing.last_seen_at=utcnow(); _attach_source(db,existing,source,item,_is_first_party(source)); _promote_primary(existing,source,item)
+        existing.last_seen_at=utcnow(); _attach_source(db,existing,source,item,_is_first_party(source,item)); _promote_primary(existing,source,item)
         return "updated"
 
     digest=content_digest(item.title,item.excerpt)
     exact=db.scalar(select(Article).where(Article.content_hash == digest))
     if exact:
-        _duplicate(db,exact,item,"content_hash",1.0); _attach_source(db,exact,source,item,_is_first_party(source)); _promote_primary(exact,source,item)
+        _duplicate(db,exact,item,"content_hash",1.0); _attach_source(db,exact,source,item,_is_first_party(source,item)); _promote_primary(exact,source,item)
         return "duplicate"
 
     recent=db.scalars(select(Article).where(Article.published_at >= (item.published_at or utcnow()) - timedelta(days=7)).limit(100)).all()
     for candidate in recent:
         similarity=SequenceMatcher(None,candidate.title.lower(),item.title.lower()).ratio()
         if similarity >= .92:
-            _duplicate(db,candidate,item,"title_similarity",similarity); _attach_source(db,candidate,source,item,_is_first_party(source)); _promote_primary(candidate,source,item)
+            _duplicate(db,candidate,item,"title_similarity",similarity); _attach_source(db,candidate,source,item,_is_first_party(source,item)); _promote_primary(candidate,source,item)
             return "duplicate"
 
     source_context=" ".join([source.source_name,*(source.country_focus or []),*(source.region_focus or [])])
     text=f"{item.title}\n{item.excerpt}"; overseas=detect_overseas(item.title,f"{item.excerpt}\n来源范围：{source_context}")
     if not overseas["is_overseas"]:
-        if not is_manual: return "skipped"
-        overseas={"is_overseas":True,"country":None,"region":None,"overseas_confidence":.2,"overseas_evidence":["用户手动导入，海外属性待人工核验"]}
+        if _is_cscec_governance_item(source,text):
+            overseas={"is_overseas":False,"country":"中国","region":"中国","overseas_confidence":.75,"overseas_evidence":["中建组织与领导动态专属监测；不进入普通海外项目情报流"]}
+        elif is_manual:
+            overseas={"is_overseas":True,"country":None,"region":None,"overseas_confidence":.2,"overseas_evidence":["用户手动导入，海外属性待人工核验"]}
+        else:
+            return "skipped"
     candidates=match_ka_candidates(item.title,item.excerpt,source.source_name,source.source_url)
     kas=list(dict.fromkeys(x["ka_group"] for x in candidates))
     matched=list(dict.fromkeys(e["alias"] for x in candidates for e in x["evidence"]))
     ka_conf=max((x["confidence"] for x in candidates),default=.35)
-    intelligence_types=classify_intelligence(text,source.source_type)
+    effective_source_type=_effective_source_type(source,item)
+    effective_reliability=_effective_reliability(source,item)
+    intelligence_types=classify_intelligence(text,effective_source_type)
     products=product_opportunities(" ".join(source.industry_focus or []),text)
-    first_party=_is_first_party(source)
+    first_party=_is_first_party(source,item)
     event_key=canonical_event_fingerprint(item.title,item.published_at,overseas["country"],candidates,intelligence_types)
     canonical_event=db.scalar(select(CanonicalEvent).where(CanonicalEvent.event_key == event_key))
     if canonical_event and canonical_event.primary_article_id:
@@ -72,7 +78,7 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
         title=item.title, original_title=item.title, summary=rule_summary(item.excerpt or item.title),
         sales_insight="待销售团队基于已核验事实评估产品机会。" if first_party else "媒体线索，建议核验官方公告。",
         original_url=item.url, canonical_url=canonical, primary_source_id=source.id, source_name=source.source_name,
-        source_type=source.source_type, reliability_level=source.reliability_level, author=item.author,
+        source_type=effective_source_type, reliability_level=effective_reliability, author=item.author,
         published_at=item.published_at, content_excerpt=item.excerpt[:6000], content_hash=digest, language=item.language,
         country=overseas["country"], region=overseas["region"], ka=kas, subsidiary=[], industries=products,
         intelligence_types=intelligence_types,matched_entities=[x["matched_entity"] for x in candidates],
@@ -80,7 +86,7 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
         overseas_evidence=overseas["overseas_evidence"], ka_match_evidence=matched,
         confidence_score=min(.98,max(overseas["overseas_confidence"],ka_conf)),
         verification_status="source_verified" if first_party else "unverified", is_primary_source=first_party,
-        review_status="pending", is_overseas=True, is_demo=False,project_type=primary_type,
+        review_status="pending", is_overseas=overseas["is_overseas"], is_demo=False,project_type=primary_type,
         ai_payload={"factual_summary":rule_summary(item.excerpt or item.title),"why_it_matters":"","project_stage":None,"related_ka":kas,"subsidiary":[],"country":overseas["country"],"region":overseas["region"],"opportunity_type":None,"schneider_product_opportunities":products,"recommended_sales_action":"核验项目状态并联系相关账户","evidence":overseas["overseas_evidence"],"uncertainty":["尚未经过人工审核"],"confidence":min(.98,max(overseas["overseas_confidence"],ka_conf))},
         ai_model="rules", ai_prompt_version="rules-v1", ai_generated_at=utcnow(), ai_result_version=1,
     )
@@ -97,7 +103,7 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
 def _attach_source(db: Session, article: Article, source: Source, item: SourceItem, is_primary: bool=False) -> ArticleSource:
     exists=db.scalar(select(ArticleSource).where(ArticleSource.article_id == article.id,ArticleSource.original_url == item.url))
     if not exists:
-        exists=ArticleSource(article_id=article.id,source_id=source.id,original_url=item.url,title=item.title,published_at=item.published_at,reliability_level=source.reliability_level,is_primary=is_primary,source_role=source_role(source.source_type,source.source_name,item.language),consistency_status="consistent")
+        exists=ArticleSource(article_id=article.id,source_id=source.id,original_url=item.url,title=item.title,published_at=item.published_at,reliability_level=_effective_reliability(source,item),is_primary=is_primary,source_role=source_role(_effective_source_type(source,item),source.source_name,item.language),consistency_status="consistent")
         db.add(exists); db.flush()
     article.cross_source_count=max(1,db.scalar(select(func.count(distinct(ArticleSource.source_id))).where(ArticleSource.article_id == article.id)) or 1)
     if article.canonical_event_id:
@@ -114,12 +120,29 @@ def _attach_source(db: Session, article: Article, source: Source, item: SourceIt
     return exists
 
 
-def _is_first_party(source: Source) -> bool:
+def _effective_source_type(source: Source, item: SourceItem) -> str:
+    return "wechat_manual" if item.raw.get("wechat_link_only") else source.source_type
+
+
+def _effective_reliability(source: Source, item: SourceItem) -> str:
+    return "low" if item.raw.get("wechat_link_only") else source.reliability_level
+
+
+def _is_first_party(source: Source, item: SourceItem | None = None) -> bool:
+    if item and item.raw.get("wechat_link_only"):
+        return False
     return source.source_type in {"official","procurement","stock_disclosure","policy","chamber","competitor"}
 
 
+def _is_cscec_governance_item(source: Source, text: str) -> bool:
+    if "cscec" not in (source.source_tags or []):
+        return False
+    from cscec import classify_leadership_event, classify_org_change
+    return bool(classify_leadership_event(text) or classify_org_change(text))
+
+
 def _promote_primary(article: Article, source: Source, item: SourceItem) -> None:
-    if not _is_first_party(source) or (article.reliability_level == "high" and article.is_primary_source): return
+    if not _is_first_party(source,item) or (article.reliability_level == "high" and article.is_primary_source): return
     article.primary_source_id=source.id; article.source_name=source.source_name; article.source_type=source.source_type
     article.reliability_level="high"; article.original_url=item.url; article.is_primary_source=True
     article.verification_status="source_verified"
