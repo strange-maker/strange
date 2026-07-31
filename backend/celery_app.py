@@ -18,4 +18,13 @@ celery.conf.update(
     enable_utc=True,
     timezone="UTC",
 )
-celery.conf.beat_schedule={"dispatch-due-sources-every-minute":{"task":"tasks.dispatch_due_sources","schedule":crontab(minute="*")}}
+celery.conf.beat_schedule={
+    "dispatch-due-sources-every-minute":{
+        "task":"tasks.dispatch_due_sources",
+        "schedule":crontab(minute="*"),
+    },
+    "sync-cscec-organization-daily":{
+        "task":"tasks.sync_cscec_entities",
+        "schedule":crontab(hour=3,minute=30),
+    },
+}

@@ -19,13 +19,15 @@ from ingestion import ingest_item
 from models import (
     Article, ArticleSource, AuditLog, BackfillCheckpoint, BackfillRun, Base,
     CanonicalEvent, CanonicalProject, CrawlBatch, CrawlBatchItem, CrawlError,
-    CrawlJob, CrawlRun, EventSource, KAEntity, KAGroup, KALeaderEvent,
+    CrawlJob, CrawlRun, CSCECEntity, CSCECLeadershipEvent, CSCECOrgEvent,
+    EventSource, KAEntity, KAGroup, KALeaderEvent, PageDiff,
     PolicyIntelligence, RefreshToken, ReviewRecord, Role, SavedSearch, Source,
     SourceCapabilityCheck, User, UserFavorite, UserReadStatus, utcnow,
 )
-from schemas import BackfillCreate, CrawlBatchCreate, LoginRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
+from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
 from security import _as_utc, audit, consume_refresh_token, create_access_token, current_user, hash_password, issue_refresh_token, require_role, verify_password
 from source_service import ensure_roles, sync_ka_mappings, sync_sources
+from cscec import sync_cscec_entities
 
 settings=get_settings(); router=APIRouter(prefix="/api")
 
@@ -217,7 +219,7 @@ def sources(_: User=Depends(current_user),db: Session=Depends(get_db)):
     result=[]
     for source in db.scalars(select(Source).order_by(Source.source_name)).all():
         run=db.scalar(select(CrawlRun).where(CrawlRun.source_id == source.id).order_by(CrawlRun.started_at.desc()).limit(1))
-        result.append({"id":source.id,"source_name":source.source_name,"source_url":source.source_url,"source_type":source.source_type,"source_tags":source.source_tags,"reliability_level":source.reliability_level,"crawl_method":source.crawl_method,"adapter_status":source.adapter_status,"schedule_minutes":source.schedule_minutes,"enabled":source.enabled,"region_focus":source.region_focus,"country_focus":source.country_focus,"industry_focus":source.industry_focus,"notes":source.notes,"last_success_at":source.last_success_at,"last_failure_at":source.last_failure_at,"consecutive_failures":source.consecutive_failures,"next_run_at":source.next_run_at,"backfill_enabled":source.backfill_enabled,"backfill_start_date":source.backfill_start_date,"backfill_end_date":source.backfill_end_date,"backfill_page_limit":source.backfill_page_limit,"backfill_status":source.backfill_status,"backfill_cursor":source.backfill_cursor,"last_backfill_at":source.last_backfill_at,"latest_new_count":run.new_count if run else 0,"latest_status":run.status if run else "never","latest_failure_reason":run.failure_reason if run else None})
+        result.append({"id":source.id,"source_name":source.source_name,"source_url":source.source_url,"source_type":source.source_type,"source_tags":source.source_tags,"entity_id":source.entity_id,"reliability_level":source.reliability_level,"crawl_method":source.crawl_method,"adapter_status":source.adapter_status,"schedule_minutes":source.schedule_minutes,"enabled":source.enabled,"region_focus":source.region_focus,"country_focus":source.country_focus,"industry_focus":source.industry_focus,"notes":source.notes,"last_success_at":source.last_success_at,"last_failure_at":source.last_failure_at,"consecutive_failures":source.consecutive_failures,"next_run_at":source.next_run_at,"backfill_enabled":source.backfill_enabled,"backfill_start_date":source.backfill_start_date,"backfill_end_date":source.backfill_end_date,"backfill_page_limit":source.backfill_page_limit,"backfill_status":source.backfill_status,"backfill_cursor":source.backfill_cursor,"last_backfill_at":source.last_backfill_at,"latest_new_count":run.new_count if run else 0,"latest_status":run.status if run else "never","latest_failure_reason":run.failure_reason if run else None})
     return result
 
 
@@ -571,11 +573,196 @@ def capability_checks(limit: int=Query(200,ge=1,le=500),_: User=Depends(require_
     return [{"id":x.id,"source_id":x.source_id,"checked_at":x.checked_at,"status":x.status,"test_method":x.test_method,"http_status":x.http_status,"crawlable":x.crawlable,"one_year_backfill":x.one_year_backfill,"extracted_fields":x.extracted_fields,"test_count":x.test_count,"failure_reason":x.failure_reason,"compliance_limits":x.compliance_limits,"recommendation":x.recommendation,"details":x.details} for x in rows]
 
 
+def _cscec_source_rows(db: Session) -> list[Source]:
+    return [
+        row
+        for row in db.scalars(select(Source).order_by(Source.source_name)).all()
+        if "cscec" in (row.source_tags or [])
+    ]
+
+
+@router.get("/ka/cscec/entities")
+def cscec_entities(
+    entity_level: str | None=None,
+    entity_type: str | None=None,
+    overseas: bool | None=None,
+    country: str | None=None,
+    region: str | None=None,
+    verification_status: str | None=None,
+    active: bool | None=None,
+    _: User=Depends(current_user),
+    db: Session=Depends(get_db),
+):
+    stmt=select(CSCECEntity)
+    if entity_level: stmt=stmt.where(CSCECEntity.entity_level == entity_level)
+    if entity_type: stmt=stmt.where(CSCECEntity.entity_type == entity_type)
+    if overseas is not None: stmt=stmt.where(CSCECEntity.overseas.is_(overseas))
+    if country: stmt=stmt.where(CSCECEntity.country == country)
+    if region: stmt=stmt.where(CSCECEntity.region == region)
+    if verification_status: stmt=stmt.where(CSCECEntity.verification_status == verification_status)
+    if active is not None: stmt=stmt.where(CSCECEntity.active.is_(active))
+    rows=db.scalars(stmt.order_by(CSCECEntity.entity_level,CSCECEntity.canonical_name)).all()
+    return {
+        "count":len(rows),
+        "items":[{
+            "entity_id":row.entity_id,"canonical_name":row.canonical_name,"short_name":row.short_name,
+            "aliases":row.aliases,"parent_entity_id":row.parent_entity_id,"entity_level":row.entity_level,
+            "entity_type":row.entity_type,"stock_code":row.stock_code,"official_url":row.official_url,
+            "country":row.country,"region":row.region,"overseas":row.overseas,
+            "verification_status":row.verification_status,"verification_source":row.verification_source,
+            "active":row.active,"notes":row.notes,"updated_at":row.updated_at,
+        } for row in rows],
+    }
+
+
+@router.get("/ka/cscec/events")
+def cscec_events(
+    q: str | None=None,
+    date_from: str | None=None,
+    date_to: str | None=None,
+    entity_id: str | None=None,
+    source_type: str | None=None,
+    reliability: str | None=None,
+    page: int=Query(1,ge=1),
+    page_size: int=Query(50,ge=1,le=200),
+    user: User=Depends(current_user),
+    db: Session=Depends(get_db),
+):
+    sources=_cscec_source_rows(db)
+    source_names=[row.source_name for row in sources]
+    stmt=select(Article).where(Article.source_name.in_(source_names or [""]),Article.is_demo.is_(False))
+    start=_date_value(date_from) if date_from else utcnow()-timedelta(days=365)
+    end=_date_value(date_to,True) if date_to else utcnow()
+    stmt=stmt.where(Article.published_at.is_not(None),Article.published_at >= start,Article.published_at <= end)
+    if q: stmt=stmt.where(or_(Article.title.ilike(f"%{q}%"),Article.summary.ilike(f"%{q}%"),Article.content_excerpt.ilike(f"%{q}%")))
+    if source_type: stmt=stmt.where(Article.source_type == source_type)
+    if reliability: stmt=stmt.where(Article.reliability_level == reliability)
+    if entity_id:
+        allowed=[row.source_name for row in sources if row.entity_id == entity_id]
+        stmt=stmt.where(Article.source_name.in_(allowed or [""]))
+    total=db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    rows=db.scalars(stmt.order_by(func.coalesce(Article.published_at,Article.fetched_at).desc()).offset((page-1)*page_size).limit(page_size)).all()
+    favorites=set(db.scalars(select(UserFavorite.article_id).where(UserFavorite.user_id == user.id)).all())
+    reads=set(db.scalars(select(UserReadStatus.article_id).where(UserReadStatus.user_id == user.id)).all())
+    return {"items":[serialize_article(row,row.id in favorites,row.id in reads) for row in rows],"count":total,"page":page,"page_size":page_size,"date_from":start,"date_to":end}
+
+
+@router.get("/ka/cscec/leadership-events")
+def cscec_leadership_events(
+    entity_id: str | None=None,
+    appointment_type: str | None=None,
+    verification_status: str | None=None,
+    limit: int=Query(100,ge=1,le=500),
+    _: User=Depends(current_user),
+    db: Session=Depends(get_db),
+):
+    stmt=select(CSCECLeadershipEvent)
+    if entity_id: stmt=stmt.where(CSCECLeadershipEvent.entity_id == entity_id)
+    if appointment_type: stmt=stmt.where(CSCECLeadershipEvent.appointment_type == appointment_type)
+    if verification_status: stmt=stmt.where(CSCECLeadershipEvent.verification_status == verification_status)
+    rows=db.scalars(stmt.order_by(func.coalesce(CSCECLeadershipEvent.published_at,CSCECLeadershipEvent.created_at).desc()).limit(limit)).all()
+    return [{"id":row.id,"person_name":row.person_name,"entity_id":row.entity_id,"parent_entity_id":row.parent_entity_id,"title_before":row.title_before,"title_after":row.title_after,"appointment_type":row.appointment_type,"effective_date":row.effective_date,"published_at":row.published_at,"source_url":row.source_url,"source_name":row.source_name,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
+
+
+@router.get("/ka/cscec/org-events")
+def cscec_org_events(
+    change_type: str | None=None,
+    verification_status: str | None=None,
+    limit: int=Query(100,ge=1,le=500),
+    _: User=Depends(current_user),
+    db: Session=Depends(get_db),
+):
+    stmt=select(CSCECOrgEvent)
+    if change_type: stmt=stmt.where(CSCECOrgEvent.change_type == change_type)
+    if verification_status: stmt=stmt.where(CSCECOrgEvent.verification_status == verification_status)
+    rows=db.scalars(stmt.order_by(func.coalesce(CSCECOrgEvent.published_at,CSCECOrgEvent.created_at).desc()).limit(limit)).all()
+    return [{"id":row.id,"change_type":row.change_type,"entity_before":row.entity_before,"entity_after":row.entity_after,"parent_before":row.parent_before,"parent_after":row.parent_after,"relation_before":row.relation_before,"relation_after":row.relation_after,"effective_date":row.effective_date,"published_at":row.published_at,"source_urls":row.source_urls,"source_count":row.source_count,"diff_snapshot_id":row.diff_snapshot_id,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
+
+
+@router.get("/ka/cscec/page-diffs")
+def cscec_page_diffs(
+    entity_id: str | None=None,
+    page_type: str | None=None,
+    verification_status: str | None=None,
+    limit: int=Query(100,ge=1,le=500),
+    _: User=Depends(current_user),
+    db: Session=Depends(get_db),
+):
+    stmt=select(PageDiff)
+    if entity_id: stmt=stmt.where(PageDiff.entity_id == entity_id)
+    if page_type: stmt=stmt.where(PageDiff.page_type == page_type)
+    if verification_status: stmt=stmt.where(PageDiff.verification_status == verification_status)
+    rows=db.scalars(stmt.order_by(PageDiff.created_at.desc()).limit(limit)).all()
+    return [{"id":row.id,"entity_id":row.entity_id,"page_type":row.page_type,"page_url":row.page_url,"before_snapshot_id":row.before_snapshot_id,"after_snapshot_id":row.after_snapshot_id,"diff_text":row.diff_text,"detected_changes":row.detected_changes,"confidence":row.confidence,"verification_status":row.verification_status,"reviewed_at":row.reviewed_at,"created_at":row.created_at} for row in rows]
+
+
+@router.post("/ka/cscec/page-diffs/{diff_id}/review")
+def review_cscec_page_diff(diff_id: str,payload: ReviewRequest,request: Request,user: User=Depends(require_role("analyst")),db: Session=Depends(get_db)):
+    row=db.get(PageDiff,diff_id)
+    if not row: raise HTTPException(404,"page diff not found")
+    row.verification_status={"approve":"verified","reject":"rejected","needs_changes":"pending_review"}[payload.action]
+    row.reviewer_id=user.id; row.reviewed_at=utcnow(); db.commit()
+    audit(db,request,user,"cscec.page_diff.review","page_diff",row.id,{"action":payload.action,"notes":payload.notes})
+    return {"id":row.id,"verification_status":row.verification_status,"reviewed_at":row.reviewed_at}
+
+
+@router.post("/admin/crawl/cscec/all",status_code=202)
+def crawl_all_cscec(payload: CSCECCrawlCreate,request: Request,user: User=Depends(require_role("admin")),db: Session=Depends(get_db)):
+    sources=_cscec_source_rows(db)
+    if payload.source_type: sources=[row for row in sources if row.source_type == payload.source_type]
+    if payload.entity_ids: sources=[row for row in sources if row.entity_id in payload.entity_ids]
+    if not sources: raise HTTPException(404,"no CSCEC sources matched")
+    return create_crawl_batch(CrawlBatchCreate(source_ids=[row.id for row in sources]),request,user,db)
+
+
+@router.post("/admin/crawl/cscec/backfill",status_code=202)
+def backfill_all_cscec(payload: CSCECBackfillCreate,request: Request,user: User=Depends(require_role("admin")),db: Session=Depends(get_db)):
+    start=payload.date_from or (utcnow()-timedelta(days=365))
+    end=payload.date_to or utcnow()
+    sources=[
+        row for row in _cscec_source_rows(db)
+        if row.adapter_status == "active" and row.adapter_key and row.backfill_enabled
+    ]
+    if payload.entity_ids: sources=[row for row in sources if row.entity_id in payload.entity_ids]
+    queued=[]; skipped=[]
+    for source in sources:
+        active=db.scalar(select(BackfillRun).where(BackfillRun.source_id == source.id,BackfillRun.status.in_(["queued","running","paused"])))
+        if active:
+            skipped.append({"source_id":source.id,"reason":"already_active","backfill_id":active.id})
+            continue
+        run=BackfillRun(source_id=source.id,requested_by=user.id,status="queued",date_from=start,date_to=end,page_limit=payload.page_limit)
+        db.add(run); source.backfill_status="queued"; db.flush()
+        try:
+            task=celery.send_task("tasks.backfill_source",args=[run.id]); run.celery_task_id=task.id
+            queued.append({"source_id":source.id,"source_name":source.source_name,"backfill_id":run.id,"task_id":task.id})
+        except Exception as exc:
+            run.status="failed"; run.failure_reason=f"worker queue unavailable: {exc}"; source.backfill_status="failed"
+            skipped.append({"source_id":source.id,"reason":run.failure_reason})
+    db.commit()
+    audit(db,request,user,"cscec.backfill.create","cscec",None,{"queued":len(queued),"skipped":len(skipped)})
+    return {"queued":queued,"skipped":skipped,"date_from":start,"date_to":end}
+
+
+@router.post("/admin/cscec/entities/sync",status_code=202)
+def sync_cscec_entity_endpoint(request: Request,user: User=Depends(require_role("admin")),db: Session=Depends(get_db)):
+    try:
+        task=celery.send_task("tasks.sync_cscec_entities")
+    except Exception as exc:
+        raise HTTPException(503,f"worker queue unavailable: {exc}") from exc
+    audit(db,request,user,"cscec.entities.sync","cscec",None,{"task_id":task.id})
+    return {"status":"queued","task_id":task.id}
+
+
+@router.post("/analyst/manual-import/wechat",status_code=201)
+def cscec_wechat_manual_import(payload: ManualImport,request: Request,user: User=Depends(require_role("analyst")),db: Session=Depends(get_db)):
+    return manual_import(payload.model_copy(update={"import_type":"wechat"}),request,user,db)
+
+
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         if not settings.production: Base.metadata.create_all(engine)
-        with SessionLocal() as db: ensure_roles(db); sync_sources(db); sync_ka_mappings(db)
+        with SessionLocal() as db: ensure_roles(db); sync_cscec_entities(db); sync_sources(db); sync_ka_mappings(db)
         yield
     app=FastAPI(title="Schneider Global Sales Intelligence API",version="1.0.0",lifespan=lifespan)
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.allowed_origins),allow_credentials=True,allow_methods=["*"],allow_headers=["*"])

@@ -44,6 +44,8 @@ class ManualImport(BaseModel):
     import_type: Literal["wechat", "web"] = "wechat"
     industry: str | None = None
     ocr_result: str | None = Field(default=None, max_length=50000)
+    attachment_urls: list[HttpUrl] = Field(default_factory=list, max_length=20)
+    attachment_types: list[str] = Field(default_factory=list, max_length=20)
 
 
 class SourceUpdate(BaseModel):
@@ -72,3 +74,15 @@ class BackfillCreate(BaseModel):
     date_from: datetime
     date_to: datetime
     page_limit: int = Field(default=25, ge=1, le=500)
+
+
+class CSCECCrawlCreate(BaseModel):
+    source_type: str | None = None
+    entity_ids: list[str] | None = None
+
+
+class CSCECBackfillCreate(BaseModel):
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    page_limit: int = Field(default=50, ge=1, le=500)
+    entity_ids: list[str] | None = None

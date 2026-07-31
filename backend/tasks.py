@@ -16,6 +16,7 @@ from crawl_service import execute_crawl
 from database import SessionLocal
 from ingestion import ingest_item
 from models import BackfillCheckpoint, BackfillRun, CrawlBatch, CrawlBatchItem, CrawlJob, CrawlRun, Source, utcnow
+from cscec import capture_page_snapshot, reconcile_discovered_entities, sync_cscec_entities
 
 settings=get_settings()
 redis_client=Redis.from_url(settings.redis_url,decode_responses=True)
@@ -183,3 +184,43 @@ def dispatch_due_sources():
             if singleton.owned(): singleton.release()
         except LockError:
             logger.warning("scheduler singleton lock expired before release")
+
+
+@celery.task(name="tasks.sync_cscec_entities")
+def sync_cscec_entity_master():
+    """Sync the reviewed master and compare the official organization page."""
+    singleton=redis_client.lock("scheduler:sync-cscec-entities",timeout=1800,blocking_timeout=0)
+    if not singleton.acquire(blocking=False):
+        return {"status":"skipped","reason":"singleton_lock"}
+    try:
+        with SessionLocal() as db:
+            master_count=sync_cscec_entities(db)
+            source=db.scalar(select(Source).where(Source.source_name == "中国建筑组织架构"))
+            if not source:
+                return {"status":"master_only","master_count":master_count,"reason":"organization source missing"}
+            adapter=build_adapter(source.source_name,source.source_url,source.adapter_config)
+            items=adapter.fetch_list()
+            capture_page_snapshot(
+                db,
+                source.source_url,
+                adapter.last_html,
+                "organization",
+                entity_id=source.entity_id,
+                source_id=source.id,
+            )
+            discovered=[
+                {
+                    "canonical_name":item.raw.get("canonical_name"),
+                    "official_url":item.raw.get("official_url"),
+                }
+                for item in items
+                if item.raw.get("entity_discovery")
+            ]
+            stats=reconcile_discovered_entities(db,discovered)
+            logger.info("CSCEC entity sync complete master=%s discovered=%s stats=%s",master_count,len(discovered),stats)
+            return {"status":"completed","master_count":master_count,"discovered_count":len(discovered),**stats}
+    finally:
+        try:
+            if singleton.owned(): singleton.release()
+        except LockError:
+            logger.warning("CSCEC entity sync singleton lock expired before release")

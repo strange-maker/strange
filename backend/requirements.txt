@@ -9,6 +9,8 @@ celery[redis]==5.4.0
 redis==5.2.1
 requests==2.32.3
 beautifulsoup4==4.13.3
+PyYAML==6.0.2
+pypdf==5.3.1
 feedparser==6.0.11
 openai==1.63.2
 pwdlib[argon2]==0.2.1

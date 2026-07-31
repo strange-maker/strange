@@ -89,6 +89,8 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
     article.canonical_event_id=canonical_event.id
     _attach_source(db,article,source,item,first_party)
     _add_policy_and_leader(db,article,text)
+    from cscec import record_cscec_article_events
+    record_cscec_article_events(db,article,source)
     return "new"
 
 

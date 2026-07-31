@@ -36,6 +36,8 @@ def source_tags_for(item: dict) -> list[str]:
     tags=[]
     if item["source_type"] == "competitor": tags.append("competitor")
     if item["source_type"] == "official": tags.append("official_owner")
+    if item.get("entity_id") or item.get("ka_focus") == "cscec":
+        tags.append("cscec")
     if any(name in item["source_name"] for name in ["许继","平高"]):
         tags.extend(["ka_subsidiary","competitor_subject"])
     return sorted(set(tags))
@@ -48,6 +50,7 @@ def sync_sources(db: Session) -> int:
         definition=ADAPTER_CONFIGS.get(item["source_name"], {})
         values={
             "source_url":item["source_url"], "source_type":item["source_type"], "reliability_level":item["reliability_level"],
+            "entity_id":item.get("entity_id"),
             "region_focus":item["region_focus"], "country_focus":item["country_focus"], "industry_focus":item["industry_focus"],
             "source_tags":source_tags_for(item),
             "crawl_method":item["crawl_method"], "adapter_key":item["source_name"] if definition else None,
