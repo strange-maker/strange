@@ -7,6 +7,13 @@ def test_sources_expose_explicit_adapter_states(client,admin_headers):
     wechat=[x for x in sources if x["source_type"] == "wechat_manual"]
     assert len(wechat) >= 15 and all(x["crawl_method"] == "manual_import" for x in wechat)
     assert len([x for x in sources if x["adapter_status"] == "active"]) >= 25
+    assert all({
+        "latest_fetched_count",
+        "latest_new_count",
+        "latest_updated_count",
+        "latest_duplicate_count",
+        "latest_skipped_count",
+    }.issubset(x) for x in sources)
     dual=[x for x in sources if "许继" in x["source_name"] or "平高" in x["source_name"]]
     assert dual and all("competitor_subject" in x["source_tags"] for x in dual)
 

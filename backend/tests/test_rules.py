@@ -10,6 +10,19 @@ def test_overseas_country_detection():
     assert result["region"] == "中东"
 
 
+def test_cscec_footprint_countries_are_not_filtered_out():
+    cases = [
+        ("中建钢构摩洛哥盖马高铁9标项目首批构件发运", "摩洛哥", "非洲"),
+        ("中建一局承建的塞尔维亚贝尔格莱德公寓全面封顶", "塞尔维亚", "欧洲"),
+        ("文兵赴科威特出席北卡巴德污水处理厂启动仪式", "科威特", "中东"),
+    ]
+    for title, country, region in cases:
+        result = detect_overseas(title, "")
+        assert result["is_overseas"] is True
+        assert result["country"] == country
+        assert result["region"] == region
+
+
 def test_domestic_without_overseas_signal_is_excluded():
     result = detect_overseas("某市产业园开工", "项目位于江苏省南京市")
     assert result["is_overseas"] is False

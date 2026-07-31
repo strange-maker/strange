@@ -5,6 +5,7 @@ import requests
 from sqlalchemy import func, select
 
 import api
+import crawl_service
 import tasks
 from adapters.base import SourceItem
 from adapters.cscec import CSCECNewsAdapter, CSCECOrganizationAdapter, _parse_cscec_date
@@ -21,6 +22,7 @@ from cscec import (
 from database import SessionLocal
 from ingestion import ingest_item
 from models import Article, CSCECLeadershipEvent, CSCECOrgEvent, PageDiff, Source, utcnow
+from crawl_service import execute_crawl
 from source_service import sync_sources
 
 
@@ -105,6 +107,53 @@ def test_cscec_source_family_is_registered_and_pending_sources_activate():
         assert source.adapter_status == "active"
         assert source.enabled is True
         assert source.adapter_config["auto_discover_news"] is True
+
+
+def test_verified_cscec_source_urls_are_synchronized():
+    expected = {
+        "中建二局新闻": "https://2bur.cscec.com/",
+        "中建三局新闻": "https://3bur.cscec.com/",
+        "中建设计研究院新闻": "https://ccdc.cscec.com/",
+        "中建西南院新闻": "https://xnjz.cscec.com/",
+        "中建西北院新闻": "https://nwin.cscec.com/",
+        "中国建筑投资者服务": "https://www.cscec.com/tzzgxnew/tzgg_new/",
+    }
+    with SessionLocal() as db:
+        rows = db.scalars(select(Source).where(Source.source_name.in_(expected))).all()
+        assert {row.source_name: row.source_url for row in rows} == expected
+        assert all(row.adapter_status == "active" for row in rows)
+
+
+def test_one_stale_detail_page_does_not_fail_the_source(monkeypatch):
+    class FakeAdapter:
+        last_http_status = 200
+
+        def fetch_list(self):
+            return [SourceItem(
+                title="中建钢构摩洛哥盖马高铁项目首批构件发运",
+                url="https://www.cscec.com/test-stale-detail",
+                published_at=utcnow(),
+                excerpt="摩洛哥高铁项目进入构件发运阶段。",
+                language="zh",
+            )]
+
+        def fetch_detail(self, _item):
+            response = requests.Response()
+            response.status_code = 404
+            raise requests.HTTPError("404 Client Error: stale detail page", response=response)
+
+    monkeypatch.setattr(crawl_service, "build_adapter", lambda *_args, **_kwargs: FakeAdapter())
+    with SessionLocal() as db:
+        source = db.scalar(select(Source).where(Source.source_name == "中国建筑企业动态"))
+        source.adapter_status = "active"
+        source.enabled = True
+        source.adapter_config = {**source.adapter_config, "fetch_detail": True}
+        db.commit()
+        run = execute_crawl(db, source)
+        assert run.status == "success"
+        assert run.fetched_count == 1
+        assert run.new_count == 1
+        assert db.scalar(select(Article).where(Article.original_url.like("%test-stale-detail%")))
 
 
 def test_leadership_activity_is_not_misclassified_as_appointment():
