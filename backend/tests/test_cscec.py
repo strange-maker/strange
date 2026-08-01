@@ -8,7 +8,13 @@ import api
 import crawl_service
 import tasks
 from adapters.base import SourceItem
-from adapters.cscec import CSCECNewsAdapter, CSCECOrganizationAdapter, _parse_cscec_date
+import adapters.cscec as cscec_adapters
+from adapters.cscec import (
+    CSCECNewsAdapter,
+    CSCECOrganizationAdapter,
+    CSCECPDFAnnouncementAdapter,
+    _parse_cscec_date,
+)
 from adapters.registry import get_adapter_definition
 from cscec import (
     capture_page_snapshot,
@@ -69,6 +75,16 @@ def _html_response(url: str, html: str) -> requests.Response:
     return response
 
 
+def _pdf_response(url: str, content: bytes = b"%PDF-1.7 test") -> requests.Response:
+    response=requests.Response()
+    response.status_code=200
+    response.url=url
+    response.headers["content-type"]="application/pdf"
+    response.headers["content-length"]=str(len(content))
+    response._content=content
+    return response
+
+
 def test_cscec_news_adapter_discovers_news_section_and_wechat_leads(monkeypatch):
     homepage="""<nav><a href="/xwzx/gsyw/">公司要闻</a></nav>"""
     listing="""<ul class="news-list">
@@ -92,11 +108,89 @@ def test_cscec_news_adapter_discovers_news_section_and_wechat_leads(monkeypatch)
     assert "正文未自动抓取" in adapter.fetch_detail(wechat).excerpt
 
 
+def test_cscec_pdf_announcement_adapter_selects_recent_and_governance_items(monkeypatch):
+    html="""<section>
+      <ul class="yxj-list">
+        <li><span>2026-06-17</span><a href="./2026/P0201.pdf">中国建筑临时股东会会议资料</a></li>
+        <li><span>2026-05-20</span><a href="./2026/P0202.pdf">中国建筑关于独立董事辞任的公告</a></li>
+        <li><span>2026-03-12</span><a href="./2026/P0203.pdf">中国建筑关于公司高级管理人员离任的公告</a></li>
+      </ul>
+      <ul class="yxj-list">
+        <li><span>2025-12-01</span><a href="./2025/P0204.pdf">中国建筑年度普通公告</a></li>
+      </ul>
+    </section>"""
+    adapter=CSCECPDFAnnouncementAdapter(
+        "https://www.cscec.com/tzzgxnew/tzgg_new/",
+        {"recent_limit":1,"priority_limit":10,"priority_lookback_days":1000},
+    )
+    monkeypatch.setattr(adapter,"_get",lambda *_args,**_kwargs:_html_response(adapter.source_url,html))
+    items=adapter.fetch_list()
+    assert [item.title for item in items] == [
+        "中国建筑临时股东会会议资料",
+        "中国建筑关于独立董事辞任的公告",
+        "中国建筑关于公司高级管理人员离任的公告",
+    ]
+    assert all(item.url.endswith(".pdf") for item in items)
+    assert all(item.raw["document_format"] == "pdf" for item in items)
+    assert items[1].published_at.isoformat().startswith("2026-05-20")
+
+
+def test_cscec_pdf_announcement_adapter_extracts_text_and_marks_scans(monkeypatch):
+    url="https://www.cscec.com/tzzgxnew/tzgg_new/2026/P0202.pdf"
+    adapter=CSCECPDFAnnouncementAdapter("https://www.cscec.com/tzzgxnew/tzgg_new/")
+    item=SourceItem(
+        title="中国建筑关于独立董事辞任的公告",
+        url=url,
+        published_at=_parse_cscec_date("2026-05-20"),
+        raw={"document_format":"pdf"},
+    )
+    monkeypatch.setattr(adapter,"_get",lambda *_args,**_kwargs:_pdf_response(url))
+    monkeypatch.setattr(
+        cscec_adapters,
+        "extract_pdf_text",
+        lambda *_args,**_kwargs:"公司独立董事马王军先生提交辞职报告，申请辞去独立董事职务。",
+    )
+    detailed=adapter.fetch_detail(item)
+    assert detailed.raw["pdf_text_status"] == "extracted"
+    assert detailed.raw["pdf_text_length"] > 20
+    assert "马王军" in detailed.excerpt
+
+    scanned=SourceItem(title="中国建筑扫描版公告",url=url,raw={"document_format":"pdf"})
+    monkeypatch.setattr(cscec_adapters,"extract_pdf_text",lambda *_args,**_kwargs:"")
+    scanned=adapter.fetch_detail(scanned)
+    assert scanned.raw["pdf_text_status"] == "requires_ocr"
+    assert "需 OCR" in scanned.excerpt
+
+
+def test_cscec_pdf_announcement_backfill_is_batched(monkeypatch):
+    adapter=CSCECPDFAnnouncementAdapter(
+        "https://www.cscec.com/tzzgxnew/tzgg_new/",
+        {"backfill_batch_size":2},
+    )
+    adapter._catalog_cache=[
+        SourceItem(title=f"中国建筑公告{i}",url=f"https://www.cscec.com/{i}.pdf")
+        for i in range(5)
+    ]
+    monkeypatch.setattr(adapter,"fetch_detail",lambda item:item)
+    first=adapter.fetch_backfill()
+    second=adapter.fetch_backfill(page=2,cursor=first.next_cursor)
+    assert len(first.items) == 2 and first.next_cursor == "2" and first.exhausted is False
+    assert len(second.items) == 2 and second.next_cursor == "4" and second.exhausted is False
+
+
 def test_cscec_source_family_is_registered_and_pending_sources_activate():
     definition=get_adapter_definition("中建四局新闻","https://4bur.cscec.com/",{
         "ka_focus":"cscec","source_type":"official","crawl_method":"html",
     })
     assert definition and definition["initial_status"] == "active"
+    pdf_definition=get_adapter_definition(
+        "中国建筑投资者服务",
+        "https://www.cscec.com/tzzgxnew/tzgg_new/",
+        {"ka_focus":"cscec","source_type":"stock_disclosure","crawl_method":"html"},
+    )
+    assert pdf_definition["class"] is CSCECPDFAnnouncementAdapter
+    assert pdf_definition["fetch_detail"] is True
+    assert pdf_definition["supports_backfill"] is True
     with SessionLocal() as db:
         source=db.scalar(select(Source).where(Source.source_name == "中建四局新闻"))
         source.adapter_status="pending_adapter"
@@ -163,6 +257,13 @@ def test_leadership_activity_is_not_misclassified_as_appointment():
     assert appointment["appointment_type"] == "appointment"
     assert meeting and meeting["role_change"] is False
     assert meeting["appointment_type"] == "overseas_visit"
+    resignation=classify_leadership_event(
+        "公司董事会于2026年5月19日收到公司独立董事马王军先生提交的辞职报告，"
+        "马王军先生申请辞去公司独立董事及董事会专门委员会相关职务。"
+    )
+    assert resignation and resignation["appointment_type"] == "resignation"
+    assert resignation["person_name"] == "马王军"
+    assert resignation["title_before"] == "独立董事"
     assert classify_org_change("公司名称变更并完成更名") == "renamed"
 
 
@@ -237,6 +338,35 @@ def test_domestic_cscec_governance_is_kept_out_of_overseas_feed_but_recorded():
         article=db.scalar(select(Article).where(Article.title.like("任命张三%")))
         assert article and article.is_overseas is False
         assert db.scalar(select(func.count(CSCECLeadershipEvent.id))) == 1
+
+
+def test_stock_disclosure_pdf_records_named_cscec_resignation():
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.source_name == "中国建筑投资者服务"))
+        result=ingest_item(db,source,SourceItem(
+            title="中国建筑关于独立董事辞任的公告",
+            url="https://www.cscec.com/tzzgxnew/tzgg_new/2026/test-resignation.pdf",
+            published_at=utcnow(),
+            excerpt=(
+                "公司董事会收到公司独立董事马王军先生提交的辞职报告，"
+                "马王军先生申请辞去公司独立董事及董事会专门委员会相关职务。"
+            ),
+            language="zh",
+            raw={"document_format":"pdf","pdf_text_status":"extracted"},
+        ))
+        db.commit()
+        assert result == "new"
+        article=db.scalar(select(Article).where(Article.original_url.like("%test-resignation.pdf")))
+        event=db.scalar(
+            select(CSCECLeadershipEvent).where(
+                CSCECLeadershipEvent.article_id == article.id,
+                CSCECLeadershipEvent.person_name == "马王军",
+            )
+        )
+        assert article.source_type == "stock_disclosure"
+        assert article.is_primary_source is True
+        assert article.is_overseas is False
+        assert event and event.appointment_type == "resignation"
 
 
 def test_official_index_wechat_link_is_low_confidence_lead():
