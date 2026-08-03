@@ -20,6 +20,7 @@ from cscec import (
     capture_page_snapshot,
     classify_leadership_event,
     classify_org_change,
+    is_plausible_person_name,
     load_cscec_entities,
     normalize_cscec_entity_name,
     parse_cscec_organization,
@@ -265,6 +266,25 @@ def test_leadership_activity_is_not_misclassified_as_appointment():
     assert resignation["person_name"] == "马王军"
     assert resignation["title_before"] == "独立董事"
     assert classify_org_change("公司名称变更并完成更名") == "renamed"
+
+
+def test_leadership_parser_rejects_pdf_prose_as_person_names():
+    false_positive_documents = (
+        "股东如有任何问题，可以在会议期间向董事会提出。董事出席本次股东会会议。",
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述。近日签署项目协议。",
+        "董事和高级管理人员不得以任何方式损害公司利益，本规定经董事会会议审议通过。",
+    )
+    for text in false_positive_documents:
+        assert classify_leadership_event(text) is None
+    for token in ("股东如有", "容不存在", "不得以"):
+        assert is_plausible_person_name(token) is False
+
+
+def test_leadership_parser_keeps_named_official_activity():
+    event = classify_leadership_event("中国建筑董事长郑学选先生赴海外调研并出席会议")
+    assert event
+    assert event["person_name"] == "郑学选"
+    assert event["appointment_type"] == "overseas_visit"
 
 
 def test_page_snapshot_is_idempotent_and_creates_review_diff():
