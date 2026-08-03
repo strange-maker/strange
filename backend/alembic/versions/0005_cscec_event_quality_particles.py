@@ -1,6 +1,6 @@
 """Remove legacy CSCEC leadership tokens containing grammatical particles.
 
-Revision ID: 0005_cscec_event_quality_particles
+Revision ID: 0005_cscec_particles
 Revises: 0004_cscec_event_quality
 """
 
@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0005_cscec_event_quality_particles"
+revision = "0005_cscec_particles"
 down_revision = "0004_cscec_event_quality"
 branch_labels = None
 depends_on = None
