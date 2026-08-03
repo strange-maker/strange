@@ -28,7 +28,7 @@ from models import (
 from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualExtractRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
 from security import _as_utc, audit, consume_refresh_token, create_access_token, current_user, hash_password, issue_refresh_token, require_role, verify_password
 from source_service import ensure_roles, sync_ka_mappings, sync_sources
-from cscec import sync_cscec_entities
+from cscec import is_plausible_person_name, sync_cscec_entities
 
 settings=get_settings(); router=APIRouter(prefix="/api")
 
@@ -672,7 +672,12 @@ def cscec_leadership_events(
     if entity_id: stmt=stmt.where(CSCECLeadershipEvent.entity_id == entity_id)
     if appointment_type: stmt=stmt.where(CSCECLeadershipEvent.appointment_type == appointment_type)
     if verification_status: stmt=stmt.where(CSCECLeadershipEvent.verification_status == verification_status)
-    rows=db.scalars(stmt.order_by(func.coalesce(CSCECLeadershipEvent.published_at,CSCECLeadershipEvent.created_at).desc()).limit(limit)).all()
+    rows=db.scalars(
+        stmt.order_by(
+            func.coalesce(CSCECLeadershipEvent.published_at,CSCECLeadershipEvent.created_at).desc()
+        ).limit(min(limit * 5, 2500))
+    ).all()
+    rows=[row for row in rows if is_plausible_person_name(row.person_name)][:limit]
     return [{"id":row.id,"person_name":row.person_name,"entity_id":row.entity_id,"parent_entity_id":row.parent_entity_id,"title_before":row.title_before,"title_after":row.title_after,"appointment_type":row.appointment_type,"effective_date":row.effective_date,"published_at":row.published_at,"source_url":row.source_url,"source_name":row.source_name,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
 
 

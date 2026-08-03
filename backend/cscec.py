@@ -79,6 +79,62 @@ ACTIVITY_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("signing", ("签约", "签署")),
     ("strategy_activity", ("战略", "年度工作会议", "经营部署")),
 ]
+COMMON_CHINESE_SURNAMES = frozenset(
+    "赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜戚谢邹喻"
+    "柏水窦章云苏潘葛奚范彭郎鲁韦昌马苗凤花方俞任袁柳鲍史唐费廉岑薛雷贺倪汤"
+    "滕殷罗毕郝邬安常乐于时傅皮卞齐康伍余元卜顾孟平黄和穆萧尹姚邵湛汪祁毛"
+    "禹狄米贝明臧计伏成戴谈宋茅庞熊纪舒屈项祝董梁杜阮蓝闵席季麻强贾路娄危"
+    "江童颜郭梅盛林刁钟徐邱骆高夏蔡田樊胡凌霍虞万支柯管卢莫房裘缪干解应宗"
+    "丁宣贲邓郁单杭洪包诸左石崔吉龚程嵇邢裴陆荣翁荀羊甄曲封芮储靳汲邴糜松"
+    "井段富巫乌焦巴弓牧隗山谷车侯宓蓬全郗班仰秋仲伊宫宁仇栾暴甘厉戎祖武符"
+    "刘景詹束龙叶幸司韶黎乔苍双闻莘党翟谭贡劳逄姬申扶堵冉宰郦雍郤璩桑桂濮"
+    "牛寿通边扈燕冀郏浦尚农温别庄晏柴瞿阎充慕连茹习艾鱼容向古易慎戈廖庾终"
+    "暨居衡步都耿满弘匡国文寇广禄阙东欧利蔚越隆师巩厍聂晁勾敖融冷訾辛阚那"
+    "简饶空曾毋沙乜养鞠须丰巢关蒯相查后荆红游竺权逯盖益桓公"
+)
+COMPOUND_CHINESE_SURNAMES = (
+    "欧阳",
+    "司马",
+    "上官",
+    "诸葛",
+    "东方",
+    "皇甫",
+    "尉迟",
+    "公孙",
+    "慕容",
+    "长孙",
+    "宇文",
+    "司徒",
+    "司空",
+    "夏侯",
+)
+PERSON_NAME_STOPWORDS = (
+    "股东",
+    "如有",
+    "任何",
+    "内容",
+    "不存在",
+    "不得",
+    "公司",
+    "本次",
+    "会议",
+    "董事",
+    "监事",
+    "人员",
+    "职务",
+    "候选",
+    "委员",
+    "管理",
+    "高级",
+    "独立",
+    "相关",
+    "以上",
+    "以下",
+    "中国",
+    "建筑",
+    "集团",
+    "有限",
+)
 ORG_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("equity_transfer", ("股权划转", "股权转让")),
     ("parent_changed", ("划入", "划转至", "隶属关系调整")),
@@ -96,6 +152,27 @@ ORG_RULES: list[tuple[str, tuple[str, ...]]] = [
 def clean_entity_name(value: str) -> str:
     value = value.replace("&nsp;", " ").replace("&nbsp;", " ").replace("\u00a0", " ")
     return re.sub(r"\s+", " ", value).strip(" \t\r\n。、，；")
+
+
+def is_plausible_person_name(value: str | None) -> bool:
+    """Return whether an extracted token is a plausible Chinese personal name.
+
+    The leadership parser previously treated the ``任`` in words such as
+    ``任何`` as an appointment verb and captured the preceding prose
+    (for example ``股东如有``) as a person's name.  Keep this validator
+    deliberately conservative because uncertain tokens must not be promoted
+    to verified leadership facts.
+    """
+
+    if value is None:
+        return False
+    name = re.sub(r"\s+", "", value).strip("·")
+    if not re.fullmatch(r"[\u4e00-\u9fff]{2,4}(?:·[\u4e00-\u9fff]{1,4})?", name):
+        return False
+    if any(word in name for word in PERSON_NAME_STOPWORDS):
+        return False
+    first_part = name.split("·", 1)[0]
+    return first_part.startswith(COMPOUND_CHINESE_SURNAMES) or first_part[0] in COMMON_CHINESE_SURNAMES
 
 
 def _name_key(value: str) -> str:
@@ -288,14 +365,22 @@ def classify_leadership_event(text: str) -> dict[str, Any] | None:
         r"([\u4e00-\u9fff·]{2,4})(?:先生|女士|同志)?"
         r"(?:提交.{0,30}?(?:辞职报告|辞任申请)|申请辞去|辞任|辞去|离任)",
         r"(?:任命|聘任|免去|调任|当选|增补)\s*([\u4e00-\u9fff]{2,4})(?:为|任|担任)",
-        r"([\u4e00-\u9fff]{2,4})(?:同志)?(?:任|担任|辞任|辞去|不再担任)",
-        r"(?:董事长|总经理|党委书记|党委副书记|副总经理|总工程师|总会计师)([\u4e00-\u9fff]{2,4})(?=调研|会见|出席|访问|赴|$)",
+        r"([\u4e00-\u9fff]{2,4})(?:先生|女士|同志)?(?:现任|曾任|出任|就任|担任|辞任|辞去|不再担任)",
+        r"(?:董事长|总经理|党委书记|党委副书记|副总经理|总工程师|总会计师)"
+        r"([\u4e00-\u9fff]{2,4})(?:先生|女士|同志)?(?=主持|调研|考察|会见|出席|参加|访问|赴|签约|签署|$)",
         r"([\u4e00-\u9fff]{2,4})(?:董事长|总经理|党委书记|党委副书记|副总经理|总工程师|总会计师)",
     )
     person_name = next(
-        (match.group(1) for pattern in person_patterns if (match := re.search(pattern, compact))),
+        (
+            match.group(1)
+            for pattern in person_patterns
+            if (match := re.search(pattern, compact))
+            and is_plausible_person_name(match.group(1))
+        ),
         None,
     )
+    if person_name is None:
+        return None
     role_pattern = "|".join(sorted(ROLE_WORDS, key=len, reverse=True))
     title = None
     if person_name:
