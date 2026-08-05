@@ -61,3 +61,11 @@ test("source management uses one admin batch action and no row-level crawl butto
   assert.doesNotMatch(page, /\/api\/sources\/\$\{s\.id\}\/run/);
   assert.doesNotMatch(page, />立即抓取</);
 });
+
+test("cscec page hides page diffs and opens detail without review controls", async () => {
+  const page = await readFile(new URL("app/page.tsx", root), "utf8");
+  assert.doesNotMatch(page, /\/api\/ka\/cscec\/page-diffs/);
+  assert.doesNotMatch(page, /\["diffs","页面差异"\]/);
+  assert.match(page, /showReview\?:boolean/);
+  assert.match(page, /<Detail article=\{detail\} user=\{user\} onClose=.*showReview=\{view!=="cscec"\}/s);
+});
