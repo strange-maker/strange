@@ -419,6 +419,140 @@ def test_cscec_api_and_manual_only_sources(client,admin_headers):
     assert wechat["entity_id"] == "cscec-listed"
 
 
+def _add_cscec_article(db, source: Source, title: str, days_ago: int, *, country: str | None, region: str | None, content: str, intelligence_types: list[str] | None=None, is_overseas: bool=False) -> Article:
+    url=f"https://www.cscec.com/test/{abs(hash(title))}.html"
+    article=Article(
+        title=title,
+        original_title=title,
+        summary=content[:220],
+        sales_insight="测试销售洞察",
+        original_url=url,
+        canonical_url=url,
+        primary_source_id=source.id,
+        source_name=source.source_name,
+        source_type=source.source_type,
+        reliability_level=source.reliability_level,
+        published_at=utcnow()-timedelta(days=days_ago),
+        fetched_at=utcnow(),
+        content_excerpt=content,
+        content_hash=f"{abs(hash(title)):064x}"[:64],
+        language="zh",
+        country=country,
+        region=region,
+        ka=["中国建筑"],
+        subsidiary=[],
+        industries=["基础设施"],
+        intelligence_types=intelligence_types or ["ka_company"],
+        matched_entities=[],
+        ka_candidates=[],
+        date_verification_status="verified",
+        overseas_evidence=[f"项目位于{country}"] if is_overseas and country else [],
+        ka_match_evidence=["标题命中中国建筑"],
+        confidence_score=.92,
+        verification_status="source_verified",
+        is_primary_source=True,
+        is_overseas=is_overseas,
+        is_demo=False,
+    )
+    db.add(article);db.flush()
+    return article
+
+
+def test_cscec_events_show_sales_relevant_items_with_overseas_priority(client,admin_headers):
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.source_name == "中国建筑企业动态"))
+        assert source is not None
+        _add_cscec_article(
+            db,source,"中国建筑与沙特业主签署新能源基础设施合作协议",2,
+            country="沙特阿拉伯",region="中东",
+            content="中国建筑与沙特业主签署新能源基础设施合作协议，双方将在海外基础设施项目上开展合作。",
+            intelligence_types=["market_project","ka_company"],is_overseas=True,
+        )
+        _add_cscec_article(
+            db,source,"中建三局与湖北某产业集团签署战略合作协议",1,
+            country="中国",region="中国",
+            content="中建三局与湖北某产业集团签署战略合作协议，围绕产业园、城市更新和基础设施建设开展合作。",
+            intelligence_types=["ka_company"],is_overseas=False,
+        )
+        _add_cscec_article(
+            db,source,"中国建筑2026年第一次临时股东会会议资料",0,
+            country="中国",region="中国",
+            content="中国建筑2026年第一次临时股东会会议资料，包含会议议程、议案和股东表决事项。",
+            intelligence_types=["ka_company"],is_overseas=False,
+        )
+        _add_cscec_article(
+            db,source,"中国建筑发布投资者关系管理制度",0,
+            country="中国",region="中国",
+            content="中国建筑发布投资者关系管理制度，规范投资者沟通和信息披露事项。",
+            intelligence_types=["ka_company"],is_overseas=False,
+        )
+        db.commit()
+
+    response=client.get("/api/ka/cscec/events",headers=admin_headers)
+    assert response.status_code == 200
+    items=response.json()["items"]
+    titles=[item["title"] for item in items]
+    assert titles[:2] == [
+        "中国建筑与沙特业主签署新能源基础设施合作协议",
+        "中建三局与湖北某产业集团签署战略合作协议",
+    ]
+    assert "中国建筑2026年第一次临时股东会会议资料" not in titles
+    assert "中国建筑发布投资者关系管理制度" not in titles
+    assert items[0]["country"] == "沙特阿拉伯"
+    assert items[0]["region"] == "中东"
+
+
+def test_cscec_leadership_and_org_events_include_sales_display_metadata(client,admin_headers):
+    with SessionLocal() as db:
+        source=db.scalar(select(Source).where(Source.source_name == "中国建筑企业动态"))
+        article=_add_cscec_article(
+            db,source,"中国建筑董事长郑学选会见阿联酋能源企业负责人",3,
+            country="阿联酋",region="中东",
+            content="中国建筑董事长郑学选会见阿联酋能源企业负责人，双方围绕能源基础设施建设合作深入交流。",
+            intelligence_types=["ka_leader","ka_company"],is_overseas=True,
+        )
+        db.add(CSCECLeadershipEvent(
+            event_key="test-zheng-xuexuan-meeting",
+            article_id=article.id,
+            person_name="郑学选",
+            entity_id="cscec-listed",
+            title_after="董事长",
+            appointment_type="meeting",
+            effective_date=article.published_at,
+            published_at=article.published_at,
+            source_url=article.original_url,
+            source_name=source.source_name,
+            evidence_excerpt=article.content_excerpt,
+            confidence=.9,
+            verification_status="source_verified",
+        ))
+        db.add(CSCECOrgEvent(
+            event_key="test-saudi-project-company-established",
+            article_id=article.id,
+            change_type="established",
+            entity_before="中国建筑股份有限公司",
+            entity_after="中国建筑股份有限公司",
+            source_urls=[article.original_url],
+            source_count=1,
+            published_at=article.published_at,
+            evidence_excerpt="中国建筑在沙特设立新能源基础设施项目公司，服务当地能源基础设施合作。",
+            confidence=.88,
+            verification_status="source_verified",
+        ))
+        db.commit()
+
+    leadership=client.get("/api/ka/cscec/leadership-events",headers=admin_headers).json()
+    meeting=next(item for item in leadership if item["person_name"] == "郑学选")
+    assert meeting["counterparty"] == "阿联酋能源企业"
+    assert meeting["country"] == "阿联酋"
+    assert meeting["region"] == "中东"
+
+    orgs=client.get("/api/ka/cscec/org-events",headers=admin_headers).json()
+    org=next(item for item in orgs if item["change_type"] == "established")
+    assert org["display_title"] == "设立：沙特新能源基础设施项目公司"
+    assert org["display_title"] != "中国建筑股份有限公司 → 中国建筑股份有限公司"
+
+
 def test_cscec_batch_duplicate_guard(client,admin_headers,monkeypatch):
     monkeypatch.setattr(api.celery,"send_task",lambda *_args,**_kwargs:SimpleNamespace(id="cscec-task"))
     with SessionLocal() as db:

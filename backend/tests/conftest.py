@@ -21,7 +21,10 @@ from cscec import sync_cscec_entities
 
 @pytest.fixture(autouse=True)
 def clean_database():
-    Base.metadata.drop_all(engine); Base.metadata.create_all(engine)
+    engine.dispose()
+    if TEST_DB.exists():
+        TEST_DB.unlink()
+    Base.metadata.create_all(engine)
     with SessionLocal() as db:
         ensure_roles(db); sync_cscec_entities(db); sync_sources(db)
         role=db.scalar(select(Role).where(Role.name == "admin"))
