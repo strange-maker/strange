@@ -148,6 +148,67 @@ ORG_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("split", ("分立", "拆分")),
     ("dissolved", ("注销", "撤销", "解散")),
 ]
+SALES_RELEVANT_KEYWORDS = (
+    "签约",
+    "签署",
+    "签订",
+    "合作",
+    "会见",
+    "拜会",
+    "座谈",
+    "交流",
+    "调研",
+    "考察",
+    "访问",
+    "出访",
+    "中标",
+    "联合体",
+    "开工",
+    "竣工",
+    "封顶",
+    "投运",
+    "承建",
+    "项目",
+    "合同",
+    "战略协议",
+    "战略合作",
+)
+PURE_GOVERNANCE_DOC_KEYWORDS = (
+    "股东会会议资料",
+    "股东大会会议资料",
+    "临时股东会",
+    "临时股东大会",
+    "会议通知",
+    "会议议程",
+    "董事会会议决议",
+    "监事会会议决议",
+    "薪酬方案",
+    "表决结果",
+    "关联交易管理制度",
+)
+PROJECT_INTELLIGENCE_TYPES = {
+    "market_project",
+    "new_factory",
+    "data_center",
+    "rail_transit",
+    "power_grid",
+    "renewable_energy",
+    "energy_storage",
+    "industrial_park",
+    "building_infrastructure",
+}
+ORG_CHANGE_LABELS = {
+    "equity_transfer": "股权变动",
+    "parent_changed": "隶属调整",
+    "department_restructured": "组织调整",
+    "overseas_office_opened": "海外机构设立",
+    "overseas_office_closed": "海外机构关闭",
+    "established": "设立",
+    "renamed": "更名",
+    "merged": "合并",
+    "split": "拆分",
+    "dissolved": "注销",
+}
 
 
 def clean_entity_name(value: str) -> str:
@@ -202,13 +263,19 @@ def load_cscec_entities() -> list[dict[str, Any]]:
 
 def sync_cscec_entities(db: Session) -> int:
     rows = load_cscec_entities()
+    existing = db.scalars(select(CSCECEntity)).all()
+    by_id = {entity.entity_id: entity for entity in existing}
+    by_name = {_name_key(entity.canonical_name): entity for entity in existing}
     for row in rows:
-        entity = db.get(CSCECEntity, row["entity_id"])
+        entity = by_id.get(row["entity_id"]) or by_name.get(_name_key(row["canonical_name"]))
         if entity is None:
-            db.add(CSCECEntity(**row))
+            entity = CSCECEntity(**row)
+            db.add(entity)
         else:
             for key, value in row.items():
                 setattr(entity, key, value)
+        by_id[entity.entity_id] = entity
+        by_name[_name_key(entity.canonical_name)] = entity
     db.commit()
     return len(rows)
 
@@ -410,6 +477,62 @@ def classify_leadership_event(text: str) -> dict[str, Any] | None:
 def classify_org_change(text: str) -> str | None:
     compact = re.sub(r"\s+", " ", text)
     return next((kind for kind, words in ORG_RULES if any(word in compact for word in words)), None)
+
+
+def _compact_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+def extract_cscec_counterparty(text: str) -> str | None:
+    compact = _compact_text(text)
+    patterns = (
+        r"会见([^，。；、]{2,50}?)(?:负责人|董事长|总经理|代表|一行)",
+        r"与([^，。；、]{2,50}?)(?:签署|签订|签约|举行|开展|深化|达成|会谈|座谈|交流|合作)",
+        r"同([^，。；、]{2,50}?)(?:签署|签订|举行|开展|深化|达成|会谈|座谈|交流|合作)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, compact)
+        if not match:
+            continue
+        value = clean_entity_name(match.group(1))
+        value = re.sub(r"^(?:中国建筑|中建\w*|公司|集团|党委书记|董事长|总经理)+", "", value)
+        value = re.sub(r"(?:就|围绕|关于).*$", "", value).strip()
+        if 2 <= len(value) <= 40:
+            return value
+    return None
+
+
+def cscec_article_sales_metadata(article: Article) -> dict[str, Any]:
+    title = article.original_title or article.title
+    text = _compact_text(f"{title} {article.summary or ''} {article.content_excerpt or ''}")
+    has_sales_keyword = any(word in text for word in SALES_RELEVANT_KEYWORDS)
+    has_project_type = bool(set(article.intelligence_types or []) & PROJECT_INTELLIGENCE_TYPES)
+    pure_governance_doc = any(word in title for word in PURE_GOVERNANCE_DOC_KEYWORDS) and not has_sales_keyword
+    country = article.country or ("中国" if not article.is_overseas else None)
+    region = article.region or ("中国" if country == "中国" else None)
+    overseas_rank = 0 if article.is_overseas or (country and country != "中国") or (region and region != "中国") else 1
+    return {
+        "is_sales_relevant": (has_sales_keyword or has_project_type) and not pure_governance_doc,
+        "country": country,
+        "region": region,
+        "counterparty": extract_cscec_counterparty(text),
+        "overseas_rank": overseas_rank,
+    }
+
+
+def cscec_org_display_title(row: CSCECOrgEvent) -> str:
+    label = ORG_CHANGE_LABELS.get(row.change_type, row.change_type)
+    evidence = _compact_text(row.evidence_excerpt or "")
+    if row.entity_before and row.entity_after and row.entity_before != row.entity_after:
+        return f"{label}：{row.entity_before} → {row.entity_after}"
+    established = re.search(r"在([^，。；、]{2,20})设立([^，。；、]{4,60})", evidence)
+    if established:
+        return f"{label}：{clean_entity_name(established.group(1) + established.group(2))}"
+    subject = re.search(r"(?:设立|成立|组建|合并|重组|更名为|注销|撤销)([^，。；、]{4,60})", evidence)
+    if subject:
+        return f"{label}：{clean_entity_name(subject.group(1))}"
+    fallback = clean_entity_name((row.entity_after or row.entity_before or evidence[:32]).strip())
+    return f"{label}：{fallback or '组织变化待核验'}"
 
 
 def _event_key(*parts: Any) -> str:
