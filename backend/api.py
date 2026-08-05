@@ -28,7 +28,7 @@ from models import (
 from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualExtractRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
 from security import _as_utc, audit, consume_refresh_token, create_access_token, current_user, hash_password, issue_refresh_token, require_role, verify_password
 from source_service import ensure_roles, sync_ka_mappings, sync_sources
-from cscec import is_plausible_person_name, sync_cscec_entities
+from cscec import cscec_article_sales_metadata, cscec_org_display_title, is_plausible_person_name, sync_cscec_entities
 
 settings=get_settings(); router=APIRouter(prefix="/api")
 
@@ -652,11 +652,25 @@ def cscec_events(
     if entity_id:
         allowed=[row.source_name for row in sources if row.entity_id == entity_id]
         stmt=stmt.where(Article.source_name.in_(allowed or [""]))
-    total=db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    rows=db.scalars(stmt.order_by(func.coalesce(Article.published_at,Article.fetched_at).desc()).offset((page-1)*page_size).limit(page_size)).all()
+    candidates=db.scalars(stmt.order_by(func.coalesce(Article.published_at,Article.fetched_at).desc()).limit(2500)).all()
+    enriched=[(row,cscec_article_sales_metadata(row)) for row in candidates]
+    enriched=[item for item in enriched if item[1]["is_sales_relevant"]]
+    enriched.sort(key=lambda item:(item[1]["overseas_rank"],-(item[0].published_at or item[0].fetched_at).timestamp()))
+    total=len(enriched)
+    rows=enriched[(page-1)*page_size:page*page_size]
     favorites=set(db.scalars(select(UserFavorite.article_id).where(UserFavorite.user_id == user.id)).all())
     reads=set(db.scalars(select(UserReadStatus.article_id).where(UserReadStatus.user_id == user.id)).all())
-    return {"items":[serialize_article(row,row.id in favorites,row.id in reads) for row in rows],"count":total,"page":page,"page_size":page_size,"date_from":start,"date_to":end}
+    items=[]
+    for row,metadata in rows:
+        payload=serialize_article(row,row.id in favorites,row.id in reads)
+        payload.update({
+            "country":metadata["country"],
+            "region":metadata["region"],
+            "cscec_counterparty":metadata["counterparty"],
+            "cscec_location_scope":"overseas" if metadata["overseas_rank"] == 0 else "domestic",
+        })
+        items.append(payload)
+    return {"items":items,"count":total,"page":page,"page_size":page_size,"date_from":start,"date_to":end}
 
 
 @router.get("/ka/cscec/leadership-events")
@@ -678,7 +692,13 @@ def cscec_leadership_events(
         ).limit(min(limit * 5, 2500))
     ).all()
     rows=[row for row in rows if is_plausible_person_name(row.person_name)][:limit]
-    return [{"id":row.id,"person_name":row.person_name,"entity_id":row.entity_id,"parent_entity_id":row.parent_entity_id,"title_before":row.title_before,"title_after":row.title_after,"appointment_type":row.appointment_type,"effective_date":row.effective_date,"published_at":row.published_at,"source_url":row.source_url,"source_name":row.source_name,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
+    article_ids=[row.article_id for row in rows if row.article_id]
+    articles={row.id:row for row in db.scalars(select(Article).where(Article.id.in_(article_ids))).all()} if article_ids else {}
+    payload=[]
+    for row in rows:
+        metadata=cscec_article_sales_metadata(articles[row.article_id]) if row.article_id in articles else {"country":None,"region":None,"counterparty":None,"overseas_rank":1}
+        payload.append({"id":row.id,"person_name":row.person_name,"entity_id":row.entity_id,"parent_entity_id":row.parent_entity_id,"title_before":row.title_before,"title_after":row.title_after,"appointment_type":row.appointment_type,"effective_date":row.effective_date,"published_at":row.published_at,"source_url":row.source_url,"source_name":row.source_name,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status,"counterparty":metadata["counterparty"],"country":metadata["country"],"region":metadata["region"],"location_scope":"overseas" if metadata["overseas_rank"] == 0 else "domestic"})
+    return payload
 
 
 @router.get("/ka/cscec/org-events")
@@ -693,7 +713,7 @@ def cscec_org_events(
     if change_type: stmt=stmt.where(CSCECOrgEvent.change_type == change_type)
     if verification_status: stmt=stmt.where(CSCECOrgEvent.verification_status == verification_status)
     rows=db.scalars(stmt.order_by(func.coalesce(CSCECOrgEvent.published_at,CSCECOrgEvent.created_at).desc()).limit(limit)).all()
-    return [{"id":row.id,"change_type":row.change_type,"entity_before":row.entity_before,"entity_after":row.entity_after,"parent_before":row.parent_before,"parent_after":row.parent_after,"relation_before":row.relation_before,"relation_after":row.relation_after,"effective_date":row.effective_date,"published_at":row.published_at,"source_urls":row.source_urls,"source_count":row.source_count,"diff_snapshot_id":row.diff_snapshot_id,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
+    return [{"id":row.id,"change_type":row.change_type,"display_title":cscec_org_display_title(row),"entity_before":row.entity_before,"entity_after":row.entity_after,"parent_before":row.parent_before,"parent_after":row.parent_after,"relation_before":row.relation_before,"relation_after":row.relation_after,"effective_date":row.effective_date,"published_at":row.published_at,"source_urls":row.source_urls,"source_count":row.source_count,"diff_snapshot_id":row.diff_snapshot_id,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
 
 
 @router.get("/ka/cscec/page-diffs")
