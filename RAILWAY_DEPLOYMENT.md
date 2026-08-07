@@ -199,7 +199,7 @@ alembic -c alembic.ini upgrade head
 
 Alembic 只执行尚未应用的 revision；重启或再次执行 `upgrade head` 不会清空表或重载演示数据。生产启动也不会调用 `create_all`，`SEED_DEMO_DATA=true` 会直接拒绝启动。
 
-当前年度情报平台包含 `0001_initial` 与 `0002_year_intelligence_platform`。`0002` 会先检查既有表、列和索引，兼容已有生产库升级与空库直接升级到 head，不会删除或重建资讯表。升级前仍建议在 Railway PostgreSQL 创建备份或快照。
+当前迁移 head 为 `0006_sales_intel_import`。该版本在既有资讯、领导和组织事件表上幂等增加销售情报字段，并新增 `manual_import_batches` 批次审计表；不会删除、清空或重建既有资讯表。升级前仍建议在 Railway PostgreSQL 创建备份或快照。
 
 首次部署或排障时，可安装 Railway CLI，登录并链接项目，然后连接 API 容器：
 
@@ -278,9 +278,31 @@ ALLOWED_ORIGINS=https://<前端真实域名>
 
 前端使用浏览器 `Intl.DateTimeFormat` 展示时间，因此会按用户设备时区显示；手工导入的 `datetime-local` 会在浏览器中转换为 UTC ISO，后端所有入库时间使用 UTC。Celery Beat 也固定使用 UTC。
 
-## 12. 上线验证
+## 12. Schinza 公众号批量导入
 
-### 12.1 健康检查
+Schinza 只在获得授权的本机环境中负责导出文章。Railway API、Worker、Scheduler 都不安装或运行 Schinza，也不需要任何微信环境变量。
+
+1. 在本机 Schinza 中导出不含凭证的 `.json` 或 `.csv` 文件。
+2. 登录工作台，进入“数据源管理”。
+3. 点击“Schinza 批量导入”，选择已有 `wechat_manual / manual_import / manual_only` 来源。
+4. 选择不超过 5 MB、最多 1000 条记录的导出文件。
+5. 先检查预览中的有效记录、正文缺失、无效行、主题路由和销售分。
+6. 确认后再导入。重复上传相同文件会返回原批次，不重复生成文章。
+
+系统会拒绝包含 `uin`、`key`、`pass_ticket`、`appmsg_token`、`wxtoken`、Cookie、证书或私钥的导出内容。不要通过 Railway Variables、GitHub、聊天或批量文件传递这些数据。所有公众号文章固定保存为 `wechat_manual / manual_import / low`，不会进入自动调度；没有官方来源支撑时显示“公众号线索，建议核验官方来源”。
+
+这项功能不新增环境变量。部署顺序仍为：
+
+1. API pre-deploy 执行 `alembic -c alembic.ini upgrade head`。
+2. API 与 Worker 都部署同一最新 commit。
+3. Cloudflare Pages 使用同一 commit 重新构建。
+4. 登录后先预览一份脱敏的小文件，再确认导入并检查 KA、竞争对手和商协会板块的主题路由。
+
+若预览返回敏感字段错误，应回到本机重新生成脱敏导出文件，不能关闭后端拒绝规则。若提示来源不合规，检查所选来源是否同时满足 `source_type=wechat_manual`、`crawl_method=manual_import`、`adapter_status=manual_only`。
+
+## 13. 上线验证
+
+### 13.1 健康检查
 
 ```powershell
 curl.exe -i https://<API域名>/health/live
@@ -294,7 +316,7 @@ curl.exe -i https://<API域名>/health
 - `/health/ready`：数据库可连接时 HTTP 200；Redis 不可用时返回 `status=degraded` 但仍为 200；数据库不可用时 HTTP 503。
 - 外部新闻站点失败不会让 API 健康检查失败。
 
-### 12.2 登录与来源 API
+### 13.2 登录与来源 API
 
 ```powershell
 $body = @{ email = "admin@example.com"; password = "<密码>" } | ConvertTo-Json
@@ -304,7 +326,7 @@ Invoke-RestMethod -Uri "https://<API域名>/api/sources" -Headers @{ Authorizati
 
 预期可看到来源列表，并包含 `adapter_status`、最近抓取状态、条数和失败原因。
 
-### 12.3 Worker 与 Scheduler
+### 13.3 Worker 与 Scheduler
 
 1. 打开 Worker Deploy Logs，确认出现 `ready`。
 2. 打开 Scheduler Deploy Logs，确认 Beat 已启动，并每分钟发送 `tasks.dispatch_due_sources`。
@@ -321,7 +343,7 @@ Invoke-RestMethod -Uri "https://<API域名>/api/sources" -Headers @{ Authorizati
 celery -A celery_app.celery inspect ping
 ```
 
-### 12.4 最近一年回填与来源能力
+### 13.4 最近一年回填与来源能力
 
 “历史回填”仅对管理员开放，支持创建、暂停、继续、重试和取消。每个任务保存分页游标与检查点；缺少可核验发布日期的内容只计入 `date_unverified_count`，不会进入最近 365 天统计。
 
@@ -335,7 +357,7 @@ $env:CRAWL_USER_AGENT="Schneider-Sales-Intelligence/1.0 contact=<合规邮箱>"
 
 结果写入 `docs/source-expansion-report.md` 和 `docs/source-expansion-report.json`。只有适配器实际返回非零真实条目才标记为 `adapter_working`；登录、付费墙、证书、JavaScript、robots 或解析失败会保留真实失败原因。
 
-## 13. 常见故障排查
+## 14. 常见故障排查
 
 ### CORS
 

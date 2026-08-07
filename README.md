@@ -140,6 +140,10 @@ $env:CRAWL_TIMEOUT_SECONDS='12'
 - 公众号必须选择已有 `wechat_manual` 来源。
 - 普通网页可填写来源名称；新来源会以 `media / low / manual_import` 建立。
 - 未获官方来源支撑时，详情页显示“媒体线索，建议核验官方公告”。
+- “Schinza 批量导入”支持本机导出的 JSON/CSV，先预览再确认，限制为 5 MB / 1000 条。
+- 批量导入按文件 SHA-256 幂等处理，并记录导入人、来源、成功、重复、失败和错误明细。
+- 不得上传 uin、key、pass_ticket、Cookie、证书或私钥；包含凭证的文件会被拒绝。
+- Railway、Worker 和 Scheduler 不运行 Schinza，也不需要任何微信凭证环境变量。
 
 ## Railway + 托管数据库部署
 
