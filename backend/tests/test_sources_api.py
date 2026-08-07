@@ -6,6 +6,12 @@ def test_sources_expose_explicit_adapter_states(client,admin_headers):
     assert all(x["latest_status"] != "success" for x in sources)
     wechat=[x for x in sources if x["source_type"] == "wechat_manual"]
     assert len(wechat) >= 15 and all(x["crawl_method"] == "manual_import" for x in wechat)
+    assert all(x["adapter_status"] == "manual_only" for x in wechat)
+    assert all(
+        set(x["source_tags"])
+        & {"ka_dynamic", "competitor_dynamic", "chamber_association"}
+        for x in wechat
+    )
     assert len([x for x in sources if x["adapter_status"] == "active"]) >= 25
     assert all({
         "latest_fetched_count",

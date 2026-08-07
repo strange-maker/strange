@@ -4,6 +4,20 @@ import subprocess
 import sys
 from pathlib import Path
 
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
+
+def test_alembic_revision_ids_fit_version_table():
+    """PostgreSQL's default alembic_version.version_num is VARCHAR(32)."""
+    backend = Path(__file__).resolve().parents[1]
+    config = Config(str(backend / "alembic.ini"))
+    config.set_main_option("script_location", str(backend / "alembic"))
+    revisions = list(ScriptDirectory.from_config(config).walk_revisions())
+
+    assert revisions
+    assert all(len(item.revision) <= 32 for item in revisions)
+
 
 def test_alembic_upgrade_from_empty_database(tmp_path):
     backend=Path(__file__).resolve().parents[1]; database=tmp_path/"migration.db"; env=os.environ.copy(); env["DATABASE_URL"]=f"sqlite:///{database.as_posix()}"
@@ -49,3 +63,64 @@ def test_compatibility_migration_preserves_legacy_rows(tmp_path):
         assert db.execute("select description from roles where name='sentinel'").fetchone()[0] == "must survive upgrade"
         assert {"backfill_enabled","backfill_status"}.issubset({x[1] for x in db.execute("pragma table_info(sources)")})
         assert {"intelligence_types","canonical_event_id"}.issubset({x[1] for x in db.execute("pragma table_info(articles)")})
+
+
+def test_sales_intelligence_migration_creates_batch_and_fields(tmp_path):
+    backend = Path(__file__).resolve().parents[1]
+    database = tmp_path / "sales-intelligence.db"
+    env = os.environ.copy()
+    env["DATABASE_URL"] = f"sqlite:///{database.as_posix()}"
+
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "-c", "alembic.ini", "upgrade", "head"],
+        cwd=backend,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+    with sqlite3.connect(database) as db:
+        tables = {row[0] for row in db.execute("select name from sqlite_master where type='table'")}
+        article_columns = {row[1] for row in db.execute("pragma table_info(articles)")}
+        leadership_columns = {
+            row[1] for row in db.execute("pragma table_info(cscec_leadership_events)")
+        }
+        org_columns = {row[1] for row in db.execute("pragma table_info(cscec_org_events)")}
+
+    assert "manual_import_batches" in tables
+    assert {
+        "display_title",
+        "manual_import_batch_id",
+        "external_parties",
+        "event_types",
+        "involved_leaders",
+        "involved_departments",
+        "industry_tags",
+        "product_opportunity_tags",
+        "sales_relevance_score",
+        "sales_score_evidence",
+        "sales_signal",
+        "sales_opportunity",
+        "recommended_contact",
+        "recommended_action",
+        "exclusion_reason",
+        "evidence_excerpt",
+        "topic_tags",
+    } <= article_columns
+    assert {
+        "event_category",
+        "activity_type",
+        "external_party",
+        "country",
+        "project_or_business",
+        "sales_impact",
+        "recommended_action",
+    } <= leadership_columns
+    assert {
+        "region_or_industry",
+        "sales_impact",
+        "recommended_contact",
+        "manual_confirmed",
+        "display_title",
+    } <= org_columns
