@@ -69,3 +69,29 @@ test("cscec page hides page diffs and opens detail without review controls", asy
   assert.match(page, /showReview\?:boolean/);
   assert.match(page, /<Detail article=\{detail\} user=\{user\} onClose=.*showReview=\{view!=="cscec"\}/s);
 });
+
+test("Schinza export uses a local preview and explicit batch confirmation flow", async () => {
+  const [page, importer] = await Promise.all([
+    readFile(new URL("app/page.tsx", root), "utf8"),
+    readFile(new URL("app/schinza-import-modal.tsx", root), "utf8"),
+  ]);
+  assert.match(page, /Schinza 批量导入/);
+  assert.match(importer, /\/api\/articles\/manual-import\/batch-preview/);
+  assert.match(importer, /\/api\/articles\/manual-import\/batch/);
+  assert.match(importer, /expected_file_sha256/);
+  assert.match(importer, /仅在浏览器读取本机导出文件/);
+  assert.match(importer, /公众号线索，建议核验官方来源/);
+});
+
+test("CSCEC page renders sales intelligence rather than generic article cards", async () => {
+  const page = await readFile(new URL("app/page.tsx", root), "utf8");
+  assert.match(page, /sales_relevance_score/);
+  assert.match(page, /海外优先/);
+  assert.match(page, /销售价值/);
+  assert.match(page, /外部合作方/);
+  assert.match(page, /人事变化/);
+  assert.match(page, /高价值业务活动/);
+  assert.match(page, /sales_impact/);
+  assert.match(page, /recommended_contact/);
+  assert.doesNotMatch(page, /中国建筑股份有限公司 → 中国建筑股份有限公司/);
+});
