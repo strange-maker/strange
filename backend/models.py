@@ -165,16 +165,44 @@ class CrawlError(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class ManualImportBatch(Base):
+    __tablename__ = "manual_import_batches"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    requested_by: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), index=True
+    )
+    original_filename: Mapped[str] = mapped_column(String(255))
+    file_sha256: Mapped[str] = mapped_column(String(64), index=True)
+    source_name: Mapped[str] = mapped_column(String(200), default="")
+    status: Mapped[str] = mapped_column(String(30), default="processing", index=True)
+    total_count: Mapped[int] = mapped_column(Integer, default=0)
+    success_count: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_count: Mapped[int] = mapped_column(Integer, default=0)
+    failure_count: Mapped[int] = mapped_column(Integer, default=0)
+    missing_body_count: Mapped[int] = mapped_column(Integer, default=0)
+    errors: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class Article(Base):
     __tablename__ = "articles"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     title: Mapped[str] = mapped_column(String(500), index=True)
+    display_title: Mapped[str] = mapped_column(String(500), default="", index=True)
     original_title: Mapped[str] = mapped_column(String(500), default="")
     summary: Mapped[str] = mapped_column(Text, default="")
     sales_insight: Mapped[str] = mapped_column(Text, default="")
     original_url: Mapped[str] = mapped_column(String(1600), index=True)
     canonical_url: Mapped[str] = mapped_column(String(1600), unique=True, index=True)
     primary_source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"), index=True)
+    manual_import_batch_id: Mapped[str | None] = mapped_column(
+        ForeignKey("manual_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     source_name: Mapped[str] = mapped_column(String(200), index=True)
     source_type: Mapped[str] = mapped_column(String(50), index=True)
     reliability_level: Mapped[str] = mapped_column(String(20), index=True)
@@ -193,6 +221,13 @@ class Article(Base):
     industries: Mapped[list] = mapped_column(JSON, default=list)
     intelligence_types: Mapped[list] = mapped_column(JSON, default=list)
     matched_entities: Mapped[list] = mapped_column(JSON, default=list)
+    external_parties: Mapped[list] = mapped_column(JSON, default=list)
+    event_types: Mapped[list] = mapped_column(JSON, default=list)
+    involved_leaders: Mapped[list] = mapped_column(JSON, default=list)
+    involved_departments: Mapped[list] = mapped_column(JSON, default=list)
+    industry_tags: Mapped[list] = mapped_column(JSON, default=list)
+    product_opportunity_tags: Mapped[list] = mapped_column(JSON, default=list)
+    topic_tags: Mapped[list] = mapped_column(JSON, default=list)
     ka_candidates: Mapped[list] = mapped_column(JSON, default=list)
     date_verification_status: Mapped[str] = mapped_column(String(30), default="verified", index=True)
     canonical_event_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
@@ -203,6 +238,14 @@ class Article(Base):
     overseas_evidence: Mapped[list] = mapped_column(JSON, default=list)
     ka_match_evidence: Mapped[list] = mapped_column(JSON, default=list)
     confidence_score: Mapped[float] = mapped_column(Float, default=0.5)
+    sales_relevance_score: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    sales_score_evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    sales_signal: Mapped[str] = mapped_column(Text, default="")
+    sales_opportunity: Mapped[str] = mapped_column(Text, default="")
+    recommended_contact: Mapped[str] = mapped_column(Text, default="")
+    recommended_action: Mapped[str] = mapped_column(Text, default="")
+    exclusion_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_excerpt: Mapped[str] = mapped_column(Text, default="")
     verification_status: Mapped[str] = mapped_column(String(30), default="unverified", index=True)
     cross_source_count: Mapped[int] = mapped_column(Integer, default=1)
     is_primary_source: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -608,6 +651,13 @@ class CSCECLeadershipEvent(Base):
     title_before: Mapped[str | None] = mapped_column(String(300), nullable=True)
     title_after: Mapped[str | None] = mapped_column(String(300), nullable=True, index=True)
     appointment_type: Mapped[str] = mapped_column(String(50), index=True)
+    event_category: Mapped[str] = mapped_column(String(60), default="", index=True)
+    activity_type: Mapped[str] = mapped_column(String(60), default="", index=True)
+    external_party: Mapped[str] = mapped_column(String(300), default="")
+    country: Mapped[str] = mapped_column(String(100), default="", index=True)
+    project_or_business: Mapped[str] = mapped_column(String(500), default="")
+    sales_impact: Mapped[str] = mapped_column(Text, default="")
+    recommended_action: Mapped[str] = mapped_column(Text, default="")
     effective_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     source_url: Mapped[str] = mapped_column(String(1600))
@@ -632,6 +682,11 @@ class CSCECOrgEvent(Base):
     parent_after: Mapped[str | None] = mapped_column(String(300), nullable=True)
     relation_before: Mapped[str | None] = mapped_column(String(100), nullable=True)
     relation_after: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    display_title: Mapped[str] = mapped_column(String(500), default="")
+    region_or_industry: Mapped[str] = mapped_column(String(300), default="")
+    sales_impact: Mapped[str] = mapped_column(Text, default="")
+    recommended_contact: Mapped[str] = mapped_column(Text, default="")
+    manual_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     effective_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     source_urls: Mapped[list] = mapped_column(JSON, default=list)

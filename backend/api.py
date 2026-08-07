@@ -22,10 +22,10 @@ from models import (
     CanonicalEvent, CanonicalProject, CrawlBatch, CrawlBatchItem, CrawlError,
     CrawlJob, CrawlRun, CSCECEntity, CSCECLeadershipEvent, CSCECOrgEvent,
     EventSource, KAEntity, KAGroup, KALeaderEvent, PageDiff,
-    PolicyIntelligence, RefreshToken, ReviewRecord, Role, SavedSearch, Source,
+    ManualImportBatch, PolicyIntelligence, RefreshToken, ReviewRecord, Role, SavedSearch, Source,
     SourceCapabilityCheck, User, UserFavorite, UserReadStatus, utcnow,
 )
-from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualExtractRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SourceUpdate, TokenResponse, UserCreate, UserUpdate
+from schemas import BackfillCreate, CSCECBackfillCreate, CSCECCrawlCreate, CrawlBatchCreate, LoginRequest, ManualExtractRequest, ManualImport, RefreshRequest, ReviewRequest, SavedSearchCreate, SchinzaBatchConfirm, SchinzaBatchRequest, SourceUpdate, TokenResponse, UserCreate, UserUpdate
 from security import _as_utc, audit, consume_refresh_token, create_access_token, current_user, hash_password, issue_refresh_token, require_role, verify_password
 from source_service import ensure_roles, sync_ka_mappings, sync_sources
 from cscec import cscec_article_sales_metadata, cscec_org_display_title, is_plausible_person_name, sync_cscec_entities
@@ -95,6 +95,33 @@ def update_user(user_id: str,payload: UserUpdate,request: Request,admin: User=De
 
 def serialize_article(article: Article, favorite=False, read=False) -> dict[str,Any]:
     return {"id":article.id,"title":article.title,"original_title":article.original_title,"summary":article.summary,"sales_insight":article.sales_insight,"original_url":article.original_url,"canonical_url":article.canonical_url,"source_name":article.source_name,"source_type":article.source_type,"reliability_level":article.reliability_level,"source_reliability":article.reliability_level,"published_at":article.published_at,"fetched_at":article.fetched_at,"first_seen_at":article.first_seen_at,"last_seen_at":article.last_seen_at,"content_excerpt":article.content_excerpt,"language":article.language,"country":article.country,"region":article.region,"ka":article.ka,"subsidiary":article.subsidiary,"industries":article.industries,"intelligence_types":article.intelligence_types,"matched_entities":article.matched_entities,"ka_candidates":article.ka_candidates,"date_verification_status":article.date_verification_status,"canonical_event_id":article.canonical_event_id,"project_type":article.project_type,"project_stage":article.project_stage,"project_value":float(article.project_value) if article.project_value is not None else None,"currency":article.currency,"overseas_evidence":article.overseas_evidence,"ka_match_evidence":article.ka_match_evidence,"confidence_score":article.confidence_score,"verification_status":article.verification_status,"cross_source_count":article.cross_source_count,"is_primary_source":article.is_primary_source,"review_status":article.review_status,"ai_payload":article.ai_payload,"favorite":favorite,"read":read,"verification_notice":None if article.reliability_level == "high" else "媒体线索，建议核验官方公告"}
+
+
+_serialize_article_legacy = serialize_article
+
+
+def serialize_article(article: Article, favorite=False, read=False) -> dict[str,Any]:
+    payload=_serialize_article_legacy(article,favorite,read)
+    payload.update({
+        "display_title":article.display_title or article.title,
+        "external_parties":article.external_parties,
+        "event_types":article.event_types,
+        "involved_leaders":article.involved_leaders,
+        "involved_departments":article.involved_departments,
+        "industry_tags":article.industry_tags,
+        "product_opportunity_tags":article.product_opportunity_tags,
+        "topic_tags":article.topic_tags,
+        "sales_relevance_score":article.sales_relevance_score,
+        "sales_score_evidence":article.sales_score_evidence,
+        "sales_signal":article.sales_signal,
+        "sales_opportunity":article.sales_opportunity,
+        "recommended_contact":article.recommended_contact,
+        "recommended_action":article.recommended_action,
+        "exclusion_reason":article.exclusion_reason,
+        "evidence_excerpt":article.evidence_excerpt,
+        "verification_notice":None if article.reliability_level == "high" else "媒体线索，建议核验官方公告",
+    })
+    return payload
 
 
 def _date_value(value: str | None,end_of_day: bool=False) -> datetime | None:
@@ -195,6 +222,203 @@ def manual_import_preview(payload: ManualExtractRequest,user: User=Depends(requi
         raise HTTPException(403,str(exc)) from exc
     except (ValueError,requests.RequestException) as exc:
         raise HTTPException(422,str(exc)) from exc
+
+
+def _schinza_preview(payload: SchinzaBatchRequest | SchinzaBatchConfirm):
+    from schinza_import import parse_schinza_export
+
+    try:
+        preview=parse_schinza_export(payload.filename,payload.content_text)
+    except ValueError as exc:
+        raise HTTPException(422,str(exc)) from exc
+    expected_file_sha256=getattr(payload,"expected_file_sha256",None)
+    if expected_file_sha256 and expected_file_sha256 != preview.file_sha256:
+        raise HTTPException(409,"文件内容已发生变化，请重新预览后再确认导入")
+    return preview
+
+
+def _schinza_item_payload(item,source_name: str) -> dict[str,Any]:
+    from sales_intelligence import analyze_text
+
+    analysis=analyze_text(
+        title=item.title,
+        content=item.content_text or item.summary,
+        source_type="wechat_manual",
+        reliability_level="low",
+    )
+    return {
+        "title":item.title,
+        "original_url":item.original_url,
+        "published_at":item.published_at,
+        "summary":item.summary,
+        "content_text":item.content_text,
+        "author":item.author,
+        "source_name":item.source_name or source_name,
+        "source_type":"wechat_manual",
+        "crawl_method":"manual_import",
+        "reliability_level":"low",
+        "topic_tags":analysis.topic_tags,
+        "sales_relevance_score":analysis.sales_relevance_score,
+        "display_title":analysis.display_title,
+        "requires_review":True,
+        "verification_notice":"公众号线索，建议核验官方来源",
+    }
+
+
+def _manual_batch_payload(batch: ManualImportBatch,idempotent_replay: bool=False) -> dict[str,Any]:
+    return {
+        "id":batch.id,
+        "requested_by":batch.requested_by,
+        "original_filename":batch.original_filename,
+        "file_sha256":batch.file_sha256,
+        "source_name":batch.source_name,
+        "status":batch.status,
+        "total_count":batch.total_count,
+        "success_count":batch.success_count,
+        "duplicate_count":batch.duplicate_count,
+        "failure_count":batch.failure_count,
+        "missing_body_count":batch.missing_body_count,
+        "errors":batch.errors,
+        "created_at":batch.created_at,
+        "completed_at":batch.completed_at,
+        "idempotent_replay":idempotent_replay,
+    }
+
+
+@router.post("/articles/manual-import/batch-preview")
+def schinza_batch_preview(
+    payload: SchinzaBatchRequest,
+    user: User=Depends(require_role("analyst")),
+):
+    preview=_schinza_preview(payload)
+    return {
+        "total_count":preview.total_count,
+        "missing_body_count":preview.missing_body_count,
+        "invalid_rows":preview.invalid_rows,
+        "file_sha256":preview.file_sha256,
+        "items":[_schinza_item_payload(item,payload.source_name) for item in preview.items],
+        "limits":{"max_file_bytes":5_000_000,"max_records":1000},
+        "credential_storage":False,
+    }
+
+
+@router.post("/articles/manual-import/batch",status_code=201)
+def schinza_batch_import(
+    payload: SchinzaBatchConfirm,
+    request: Request,
+    response: Response,
+    user: User=Depends(require_role("analyst")),
+    db: Session=Depends(get_db),
+):
+    preview=_schinza_preview(payload)
+    source=db.scalar(select(Source).where(Source.source_name == payload.source_name))
+    if (
+        not source
+        or source.source_type != "wechat_manual"
+        or source.crawl_method != "manual_import"
+        or source.adapter_status != "manual_only"
+    ):
+        raise HTTPException(
+            400,
+            "批量公众号导入必须使用已配置的 wechat_manual/manual_import 来源",
+        )
+    existing=db.scalar(
+        select(ManualImportBatch).where(
+            ManualImportBatch.requested_by == user.id,
+            ManualImportBatch.file_sha256 == preview.file_sha256,
+            ManualImportBatch.source_name == source.source_name,
+            ManualImportBatch.status.in_(("completed","completed_with_errors")),
+        ).order_by(ManualImportBatch.created_at.desc())
+    )
+    if existing:
+        response.status_code=200
+        return _manual_batch_payload(existing,True)
+
+    batch=ManualImportBatch(
+        requested_by=user.id,
+        original_filename=payload.filename,
+        file_sha256=preview.file_sha256,
+        source_name=source.source_name,
+        status="processing",
+        total_count=preview.total_count,
+        missing_body_count=preview.missing_body_count,
+        errors=list(preview.invalid_rows),
+    )
+    db.add(batch); db.flush()
+    success_count=duplicate_count=failure_count=0
+    errors=list(preview.invalid_rows)
+    for index,item in enumerate(preview.items,start=1):
+        try:
+            source_item=SourceItem(
+                title=item.title,
+                url=item.original_url,
+                published_at=item.published_at,
+                author=item.author or None,
+                excerpt=(item.content_text or item.summary)[:6000],
+                language="zh",
+                raw={
+                    "wechat_link_only":True,
+                    "manual_import":True,
+                    "source_name":item.source_name or source.source_name,
+                },
+            )
+            with db.begin_nested():
+                result=ingest_item(
+                    db,
+                    source,
+                    source_item,
+                    True,
+                    manual_import_batch_id=batch.id,
+                )
+            if result == "new":
+                success_count += 1
+            elif result in {"duplicate","updated"}:
+                duplicate_count += 1
+            else:
+                failure_count += 1
+                errors.append({"row":index,"reason":f"导入结果：{result}"})
+        except Exception as exc:
+            failure_count += 1
+            errors.append({"row":index,"reason":str(exc)[:500]})
+    batch.success_count=success_count
+    batch.duplicate_count=duplicate_count
+    batch.failure_count=failure_count+len(preview.invalid_rows)
+    batch.errors=errors
+    batch.status="completed_with_errors" if batch.failure_count else "completed"
+    batch.completed_at=utcnow()
+    audit(
+        db,
+        request,
+        user,
+        "article.manual_import_batch",
+        "manual_import_batch",
+        batch.id,
+        {
+            "filename":payload.filename,
+            "file_sha256":preview.file_sha256,
+            "source_name":source.source_name,
+            "total_count":batch.total_count,
+            "success_count":batch.success_count,
+            "duplicate_count":batch.duplicate_count,
+            "failure_count":batch.failure_count,
+        },
+    )
+    db.refresh(batch)
+    return _manual_batch_payload(batch)
+
+
+@router.get("/articles/manual-import/batches/{batch_id}")
+def schinza_batch_status(
+    batch_id: str,
+    user: User=Depends(require_role("analyst")),
+    db: Session=Depends(get_db),
+):
+    batch=db.get(ManualImportBatch,batch_id)
+    if not batch:
+        raise HTTPException(404,"导入批次不存在")
+    if user.role.name != "admin" and batch.requested_by != user.id:
+        raise HTTPException(403,"无权查看该导入批次")
+    return _manual_batch_payload(batch)
 
 
 @router.put("/articles/{article_id}/favorite")
@@ -633,8 +857,18 @@ def cscec_events(
     date_from: str | None=None,
     date_to: str | None=None,
     entity_id: str | None=None,
+    external_party: str | None=None,
+    country: str | None=None,
+    region: str | None=None,
+    industry: str | None=None,
+    project_stage: str | None=None,
+    event_type: str | None=None,
+    leader: str | None=None,
+    sales_value: str | None=None,
+    min_sales_score: int=Query(30,ge=0,le=100),
     source_type: str | None=None,
     reliability: str | None=None,
+    sort: str="published_desc",
     page: int=Query(1,ge=1),
     page_size: int=Query(50,ge=1,le=200),
     user: User=Depends(current_user),
@@ -642,20 +876,64 @@ def cscec_events(
 ):
     sources=_cscec_source_rows(db)
     source_names=[row.source_name for row in sources]
-    stmt=select(Article).where(Article.source_name.in_(source_names or [""]),Article.is_demo.is_(False))
+    stmt=select(Article).where(
+        or_(
+            Article.source_name.in_(source_names or [""]),
+            Article.topic_tags.cast(String).ilike("%ka_dynamic%"),
+        ),
+        Article.is_demo.is_(False),
+    )
     start=_date_value(date_from) if date_from else utcnow()-timedelta(days=365)
     end=_date_value(date_to,True) if date_to else utcnow()
     stmt=stmt.where(Article.published_at.is_not(None),Article.published_at >= start,Article.published_at <= end)
     if q: stmt=stmt.where(or_(Article.title.ilike(f"%{q}%"),Article.summary.ilike(f"%{q}%"),Article.content_excerpt.ilike(f"%{q}%")))
+    if country: stmt=stmt.where(Article.country == country)
+    if region: stmt=stmt.where(Article.region == region)
+    if project_stage: stmt=stmt.where(Article.project_stage == project_stage)
     if source_type: stmt=stmt.where(Article.source_type == source_type)
     if reliability: stmt=stmt.where(Article.reliability_level == reliability)
     if entity_id:
         allowed=[row.source_name for row in sources if row.entity_id == entity_id]
-        stmt=stmt.where(Article.source_name.in_(allowed or [""]))
+        entity=db.get(CSCECEntity,entity_id)
+        names=[value for value in (entity.canonical_name if entity else None,entity.short_name if entity else None) if value]
+        stmt=stmt.where(or_(Article.source_name.in_(allowed or [""]),*(Article.matched_entities.cast(String).ilike(f"%{name}%") for name in names)))
     candidates=db.scalars(stmt.order_by(func.coalesce(Article.published_at,Article.fetched_at).desc()).limit(2500)).all()
-    enriched=[(row,cscec_article_sales_metadata(row)) for row in candidates]
-    enriched=[item for item in enriched if item[1]["is_sales_relevant"]]
-    enriched.sort(key=lambda item:(item[1]["overseas_rank"],-(item[0].published_at or item[0].fetched_at).timestamp()))
+    enriched=[]
+    for row in candidates:
+        if external_party and not any(external_party in value for value in (row.external_parties or [])): continue
+        if industry and not any(industry in value for value in (row.industry_tags or [])): continue
+        if event_type and not any(event_type in value for value in (row.event_types or [])): continue
+        if leader and not any(leader in str(value.get("name","")) for value in (row.involved_leaders or [])): continue
+        metadata=cscec_article_sales_metadata(row)
+        structured=bool(row.sales_score_evidence)
+        score=row.sales_relevance_score if structured else (70 if metadata["is_sales_relevant"] and metadata["overseas_rank"] == 0 else (55 if metadata["is_sales_relevant"] else 0))
+        if sales_value == "high" and score < 70: continue
+        if sales_value == "medium" and not 50 <= score <= 69: continue
+        if sales_value == "low" and not 30 <= score <= 49: continue
+        if sales_value not in {None,"all","high","medium","low"}:
+            raise HTTPException(422,"sales_value must be high, medium, low, or all")
+        if score < min_sales_score: continue
+        metadata["sales_relevance_score"]=score
+        enriched.append((row,metadata))
+    reliability_rank={"high":3,"medium":2,"low":1}
+    grouped: dict[str,tuple[Article,dict[str,Any]]]={}
+    for row,metadata in enriched:
+        key=row.canonical_event_id or row.content_hash or row.id
+        current=grouped.get(key)
+        candidate_rank=(reliability_rank.get(row.reliability_level,0),int(row.is_primary_source),metadata["sales_relevance_score"])
+        if not current:
+            grouped[key]=(row,metadata)
+            continue
+        current_rank=(reliability_rank.get(current[0].reliability_level,0),int(current[0].is_primary_source),current[1]["sales_relevance_score"])
+        if candidate_rank > current_rank:
+            grouped[key]=(row,metadata)
+    enriched=list(grouped.values())
+    if sort == "sales_relevance_desc":
+        enriched.sort(key=lambda item:(item[1]["overseas_rank"],-item[1]["sales_relevance_score"],-(item[0].published_at or item[0].fetched_at).timestamp()))
+    elif sort == "published_desc":
+        enriched.sort(key=lambda item:(item[1]["overseas_rank"],-(item[0].published_at or item[0].fetched_at).timestamp(),-item[1]["sales_relevance_score"]))
+    else:
+        raise HTTPException(422,"unsupported CSCEC event sort")
     total=len(enriched)
     rows=enriched[(page-1)*page_size:page*page_size]
     favorites=set(db.scalars(select(UserFavorite.article_id).where(UserFavorite.user_id == user.id)).all())
@@ -668,6 +946,8 @@ def cscec_events(
             "region":metadata["region"],
             "cscec_counterparty":metadata["counterparty"],
             "cscec_location_scope":"overseas" if metadata["overseas_rank"] == 0 else "domestic",
+            "sales_relevance_score":metadata["sales_relevance_score"],
+            "sales_value":("high" if metadata["sales_relevance_score"] >= 70 else ("medium" if metadata["sales_relevance_score"] >= 50 else "low")),
         })
         items.append(payload)
     return {"items":items,"count":total,"page":page,"page_size":page_size,"date_from":start,"date_to":end}
@@ -677,6 +957,10 @@ def cscec_events(
 def cscec_leadership_events(
     entity_id: str | None=None,
     appointment_type: str | None=None,
+    event_category: str | None=None,
+    activity_type: str | None=None,
+    country: str | None=None,
+    external_party: str | None=None,
     verification_status: str | None=None,
     limit: int=Query(100,ge=1,le=500),
     _: User=Depends(current_user),
@@ -685,6 +969,10 @@ def cscec_leadership_events(
     stmt=select(CSCECLeadershipEvent)
     if entity_id: stmt=stmt.where(CSCECLeadershipEvent.entity_id == entity_id)
     if appointment_type: stmt=stmt.where(CSCECLeadershipEvent.appointment_type == appointment_type)
+    if event_category: stmt=stmt.where(CSCECLeadershipEvent.event_category == event_category)
+    if activity_type: stmt=stmt.where(CSCECLeadershipEvent.activity_type == activity_type)
+    if country: stmt=stmt.where(CSCECLeadershipEvent.country == country)
+    if external_party: stmt=stmt.where(CSCECLeadershipEvent.external_party.ilike(f"%{external_party}%"))
     if verification_status: stmt=stmt.where(CSCECLeadershipEvent.verification_status == verification_status)
     rows=db.scalars(
         stmt.order_by(
@@ -697,13 +985,18 @@ def cscec_leadership_events(
     payload=[]
     for row in rows:
         metadata=cscec_article_sales_metadata(articles[row.article_id]) if row.article_id in articles else {"country":None,"region":None,"counterparty":None,"overseas_rank":1}
-        payload.append({"id":row.id,"person_name":row.person_name,"entity_id":row.entity_id,"parent_entity_id":row.parent_entity_id,"title_before":row.title_before,"title_after":row.title_after,"appointment_type":row.appointment_type,"effective_date":row.effective_date,"published_at":row.published_at,"source_url":row.source_url,"source_name":row.source_name,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status,"counterparty":metadata["counterparty"],"country":metadata["country"],"region":metadata["region"],"location_scope":"overseas" if metadata["overseas_rank"] == 0 else "domestic"})
+        article=articles.get(row.article_id)
+        leader_data=next((item for item in (article.involved_leaders if article else []) if item.get("name") == row.person_name),{})
+        category=row.event_category or ("personnel_change" if row.appointment_type in {"appointment","resignation","retirement","removal","transfer","concurrent_role","board_change"} else "business_activity")
+        payload.append({"id":row.id,"canonical_event_id":article.canonical_event_id if article else None,"person_name":row.person_name,"current_title":leader_data.get("title") or row.title_after or row.title_before,"entity_id":row.entity_id,"parent_entity_id":row.parent_entity_id,"title_before":row.title_before,"title_after":row.title_after,"appointment_type":row.appointment_type,"event_category":category,"activity_type":row.activity_type,"external_party":row.external_party or metadata["counterparty"],"project_or_business":row.project_or_business,"sales_impact":row.sales_impact,"recommended_action":row.recommended_action,"effective_date":row.effective_date,"published_at":row.published_at,"source_url":row.source_url,"source_name":row.source_name,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status,"counterparty":row.external_party or metadata["counterparty"],"country":row.country or metadata["country"],"region":metadata["region"],"location_scope":"overseas" if (row.country or metadata["overseas_rank"] == 0) else "domestic"})
     return payload
 
 
 @router.get("/ka/cscec/org-events")
 def cscec_org_events(
     change_type: str | None=None,
+    region_or_industry: str | None=None,
+    manual_confirmed: bool | None=None,
     verification_status: str | None=None,
     limit: int=Query(100,ge=1,le=500),
     _: User=Depends(current_user),
@@ -711,9 +1004,13 @@ def cscec_org_events(
 ):
     stmt=select(CSCECOrgEvent)
     if change_type: stmt=stmt.where(CSCECOrgEvent.change_type == change_type)
+    if region_or_industry: stmt=stmt.where(CSCECOrgEvent.region_or_industry.ilike(f"%{region_or_industry}%"))
+    if manual_confirmed is not None: stmt=stmt.where(CSCECOrgEvent.manual_confirmed.is_(manual_confirmed))
     if verification_status: stmt=stmt.where(CSCECOrgEvent.verification_status == verification_status)
     rows=db.scalars(stmt.order_by(func.coalesce(CSCECOrgEvent.published_at,CSCECOrgEvent.created_at).desc()).limit(limit)).all()
-    return [{"id":row.id,"change_type":row.change_type,"display_title":cscec_org_display_title(row),"entity_before":row.entity_before,"entity_after":row.entity_after,"parent_before":row.parent_before,"parent_after":row.parent_after,"relation_before":row.relation_before,"relation_after":row.relation_after,"effective_date":row.effective_date,"published_at":row.published_at,"source_urls":row.source_urls,"source_count":row.source_count,"diff_snapshot_id":row.diff_snapshot_id,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
+    article_ids=[row.article_id for row in rows if row.article_id]
+    articles={row.id:row for row in db.scalars(select(Article).where(Article.id.in_(article_ids))).all()} if article_ids else {}
+    return [{"id":row.id,"canonical_event_id":articles[row.article_id].canonical_event_id if row.article_id in articles else None,"change_type":row.change_type,"display_title":cscec_org_display_title(row),"entity_before":row.entity_before,"entity_after":row.entity_after,"parent_before":row.parent_before,"parent_after":row.parent_after,"relation_before":row.relation_before,"relation_after":row.relation_after,"region_or_industry":row.region_or_industry,"sales_impact":row.sales_impact,"recommended_contact":row.recommended_contact,"manual_confirmed":row.manual_confirmed,"effective_date":row.effective_date,"published_at":row.published_at,"source_urls":row.source_urls,"source_count":row.source_count,"diff_snapshot_id":row.diff_snapshot_id,"evidence_excerpt":row.evidence_excerpt,"confidence":row.confidence,"verification_status":row.verification_status} for row in rows]
 
 
 @router.get("/ka/cscec/page-diffs")

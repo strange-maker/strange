@@ -521,6 +521,8 @@ def cscec_article_sales_metadata(article: Article) -> dict[str, Any]:
 
 
 def cscec_org_display_title(row: CSCECOrgEvent) -> str:
+    if row.display_title and row.display_title.strip():
+        return row.display_title.strip()
     label = ORG_CHANGE_LABELS.get(row.change_type, row.change_type)
     evidence = _compact_text(row.evidence_excerpt or "")
     if row.entity_before and row.entity_after and row.entity_before != row.entity_after:
@@ -541,14 +543,24 @@ def _event_key(*parts: Any) -> str:
 
 
 def record_cscec_article_events(db: Session, article: Article, source: Source) -> None:
-    if "cscec" not in (source.source_tags or []):
+    if "cscec" not in (source.source_tags or []) and "ka_dynamic" not in (
+        article.topic_tags or []
+    ):
         return
+    from sales_intelligence import analyze_text
+
     text = f"{article.original_title or article.title}\n{article.content_excerpt or ''}"
+    analysis = analyze_text(
+        title=article.original_title or article.title,
+        content=article.content_excerpt or article.summary or "",
+        source_type=article.source_type,
+        reliability_level=article.reliability_level,
+    )
     entity = db.get(CSCECEntity, source.entity_id) if source.entity_id else None
     entity_id = entity.entity_id if entity else source.entity_id
     parent_entity_id = entity.parent_entity_id if entity else None
     leadership = classify_leadership_event(text)
-    if leadership:
+    if leadership and leadership.get("role_change"):
         key = _event_key(
             entity_id,
             leadership["person_name"],
@@ -567,6 +579,13 @@ def record_cscec_article_events(db: Session, article: Article, source: Source) -
                     title_before=leadership["title_before"],
                     title_after=leadership["title_after"],
                     appointment_type=leadership["appointment_type"],
+                    event_category="personnel_change",
+                    activity_type="",
+                    external_party="",
+                    country=analysis.country or "",
+                    project_or_business=analysis.project_name or "",
+                    sales_impact="领导职责或决策链发生变化，建议更新KA联系人关系。",
+                    recommended_action="核验任免公告和最新分工，更新对应中建单位的决策人关系图。",
                     effective_date=article.published_at,
                     published_at=article.published_at,
                     source_url=article.original_url,
@@ -577,7 +596,110 @@ def record_cscec_article_events(db: Session, article: Article, source: Source) -
                 )
             )
             db.flush()
+
+    business_activity = next(
+        (
+            value
+            for event_type, value in (
+                ("签约合作", "signing"),
+                ("EPC签约", "signing"),
+                ("政府交流", "government_exchange"),
+                ("客户拜访", "client_meeting"),
+                ("高层会见", "executive_meeting"),
+                ("海外考察", "overseas_visit"),
+                ("项目推进", "project_advancement"),
+            )
+            if event_type in analysis.event_types
+        ),
+        None,
+    )
+    if business_activity and analysis.sales_relevance_score >= 30:
+        for leader in analysis.involved_leaders:
+            key = _event_key(
+                entity_id,
+                leader["name"],
+                "business_activity",
+                business_activity,
+                article.published_at.date() if article.published_at else "date-unverified",
+                article.canonical_event_id or article.id,
+            )
+            existing = db.scalar(
+                select(CSCECLeadershipEvent).where(
+                    CSCECLeadershipEvent.event_key == key
+                )
+            )
+            if existing:
+                continue
+            db.add(
+                CSCECLeadershipEvent(
+                    event_key=key,
+                    article_id=article.id,
+                    person_name=leader["name"],
+                    entity_id=entity_id,
+                    parent_entity_id=parent_entity_id,
+                    title_before=None,
+                    title_after=None,
+                    appointment_type=(
+                        "signing"
+                        if business_activity == "signing"
+                        else (
+                            "overseas_visit"
+                            if business_activity == "overseas_visit"
+                            else "meeting"
+                        )
+                    ),
+                    event_category="business_activity",
+                    activity_type=business_activity,
+                    external_party=(analysis.external_parties or [""])[0],
+                    country=analysis.country or "",
+                    project_or_business=analysis.project_name
+                    or "、".join(analysis.industry_tags),
+                    sales_impact=analysis.sales_signal,
+                    recommended_action=analysis.recommended_action,
+                    effective_date=article.published_at,
+                    published_at=article.published_at,
+                    source_url=article.original_url,
+                    source_name=article.source_name,
+                    evidence_excerpt=analysis.evidence_excerpt,
+                    confidence=article.confidence_score,
+                    verification_status=(
+                        "source_verified"
+                        if article.is_primary_source
+                        else "pending_review"
+                    ),
+                )
+            )
+            db.flush()
+
     change_type = classify_org_change(text)
+    if change_type is None:
+        clean_org_rules = (
+            ("overseas_office_opened", ("成立海外区域总部", "成立区域总部", "设立国别公司")),
+            ("department_restructured", ("海外事业部调整", "事业部调整", "组织架构调整")),
+            ("renamed", ("更名", "名称变更")),
+            ("merged", ("合并", "重组")),
+            ("dissolved", ("注销", "撤销")),
+            ("established", ("成立", "设立", "组建")),
+        )
+        change_type = next(
+            (
+                kind
+                for kind, words in clean_org_rules
+                if any(word in text for word in words)
+                and any(
+                    subject in text
+                    for subject in (
+                        "总部",
+                        "公司",
+                        "事业部",
+                        "设计院",
+                        "投资平台",
+                        "专业公司",
+                    )
+                )
+            ),
+            None,
+        )
     if change_type:
         key = _event_key(
             entity_id,
@@ -586,15 +708,37 @@ def record_cscec_article_events(db: Session, article: Article, source: Source) -
             article.canonical_event_id or article.id,
         )
         if not db.scalar(select(CSCECOrgEvent).where(CSCECOrgEvent.event_key == key)):
+            new_entity = None
+            if change_type in {"established", "overseas_office_opened"}:
+                match = re.search(
+                    r"((?:中国建筑|中建)[^，。；\n]{0,40}?"
+                    r"(?:区域总部|国别公司|项目公司|事业部|设计院|投资平台|专业公司))",
+                    text,
+                )
+                new_entity = clean_entity_name(match.group(1)) if match else None
+            display_title = article.display_title or article.original_title or article.title
             db.add(
                 CSCECOrgEvent(
                     event_key=key,
                     article_id=article.id,
                     change_type=change_type,
-                    entity_before=entity.canonical_name if entity else None,
-                    entity_after=entity.canonical_name if entity else None,
+                    entity_before=(
+                        None
+                        if change_type in {"established", "overseas_office_opened"}
+                        else (entity.canonical_name if entity else None)
+                    ),
+                    entity_after=new_entity or (entity.canonical_name if entity else None),
                     parent_before=parent_entity_id,
                     parent_after=parent_entity_id,
+                    display_title=display_title,
+                    region_or_industry="、".join(
+                        [value for value in (analysis.region, *analysis.industry_tags) if value]
+                    ),
+                    sales_impact=(
+                        "可能改变海外市场覆盖、客户归属或项目决策链，建议更新KA覆盖关系。"
+                    ),
+                    recommended_contact=analysis.recommended_contact,
+                    manual_confirmed=False,
                     effective_date=article.published_at,
                     published_at=article.published_at,
                     source_urls=[article.original_url],

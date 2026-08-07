@@ -35,6 +35,12 @@ def adapter_status_for(item: dict) -> str:
 
 def source_tags_for(item: dict) -> list[str]:
     tags=[]
+    if item["source_type"] == "wechat_manual":
+        tags.extend(
+            item.get("topic_focus")
+            or ["ka_dynamic", "competitor_dynamic", "chamber_association"]
+        )
+        tags.extend(["manual_only", "wechat_manual"])
     if item["source_type"] == "competitor": tags.append("competitor")
     if item["source_type"] == "official": tags.append("official_owner")
     if item.get("entity_id") or item.get("ka_focus") == "cscec":

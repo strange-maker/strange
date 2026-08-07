@@ -23,12 +23,21 @@ from models import (
     EventSource, KALeaderEvent, PolicyIntelligence, Source, utcnow,
 )
 from rules import detect_overseas, product_opportunities, rule_summary
+from sales_intelligence import analyze_text
 
 
-def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool = False) -> str:
+def ingest_item(
+    db: Session,
+    source: Source,
+    item: SourceItem,
+    is_manual: bool = False,
+    manual_import_batch_id: str | None = None,
+) -> str:
     canonical=canonicalize_url(item.url)
     existing=db.scalar(select(Article).where(Article.canonical_url == canonical))
     if existing:
+        if manual_import_batch_id and not existing.manual_import_batch_id:
+            existing.manual_import_batch_id=manual_import_batch_id
         existing.last_seen_at=utcnow(); _attach_source(db,existing,source,item,_is_first_party(source,item)); _promote_primary(existing,source,item)
         return "updated"
 
@@ -60,6 +69,12 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
     ka_conf=max((x["confidence"] for x in candidates),default=.35)
     effective_source_type=_effective_source_type(source,item)
     effective_reliability=_effective_reliability(source,item)
+    sales_analysis=analyze_text(
+        title=item.title,
+        content=item.excerpt,
+        source_type=effective_source_type,
+        reliability_level=effective_reliability,
+    )
     intelligence_types=classify_intelligence(text,effective_source_type)
     products=product_opportunities(" ".join(source.industry_focus or []),text)
     first_party=_is_first_party(source,item)
@@ -75,16 +90,34 @@ def ingest_item(db: Session, source: Source, item: SourceItem, is_manual: bool =
 
     primary_type=next((x for x in intelligence_types if x in PROJECT_TYPES),None)
     article=Article(
-        title=item.title, original_title=item.title, summary=rule_summary(item.excerpt or item.title),
+        title=item.title, display_title=sales_analysis.display_title,
+        original_title=item.title, summary=rule_summary(item.excerpt or item.title),
         sales_insight="待销售团队基于已核验事实评估产品机会。" if first_party else "媒体线索，建议核验官方公告。",
-        original_url=item.url, canonical_url=canonical, primary_source_id=source.id, source_name=source.source_name,
+        original_url=item.url, canonical_url=canonical, primary_source_id=source.id,
+        manual_import_batch_id=manual_import_batch_id, source_name=source.source_name,
         source_type=effective_source_type, reliability_level=effective_reliability, author=item.author,
         published_at=item.published_at, content_excerpt=item.excerpt[:6000], content_hash=digest, language=item.language,
-        country=overseas["country"], region=overseas["region"], ka=kas, subsidiary=[], industries=products,
+        country=sales_analysis.country or overseas["country"],
+        region=sales_analysis.region or overseas["region"], ka=kas, subsidiary=[], industries=products,
         intelligence_types=intelligence_types,matched_entities=[x["matched_entity"] for x in candidates],
+        external_parties=sales_analysis.external_parties,
+        event_types=sales_analysis.event_types,
+        involved_leaders=sales_analysis.involved_leaders,
+        involved_departments=sales_analysis.involved_departments,
+        industry_tags=sales_analysis.industry_tags,
+        product_opportunity_tags=sales_analysis.product_opportunity_tags,
+        topic_tags=sales_analysis.topic_tags,
         ka_candidates=candidates,date_verification_status="verified" if item.published_at else "date_unverified",
         overseas_evidence=overseas["overseas_evidence"], ka_match_evidence=matched,
         confidence_score=min(.98,max(overseas["overseas_confidence"],ka_conf)),
+        sales_relevance_score=sales_analysis.sales_relevance_score,
+        sales_score_evidence=sales_analysis.sales_score_evidence,
+        sales_signal=sales_analysis.sales_signal,
+        sales_opportunity=sales_analysis.sales_opportunity,
+        recommended_contact=sales_analysis.recommended_contact,
+        recommended_action=sales_analysis.recommended_action,
+        exclusion_reason=sales_analysis.exclusion_reason,
+        evidence_excerpt=sales_analysis.evidence_excerpt,
         verification_status="source_verified" if first_party else "unverified", is_primary_source=first_party,
         review_status="pending", is_overseas=overseas["is_overseas"], is_demo=False,project_type=primary_type,
         ai_payload={"factual_summary":rule_summary(item.excerpt or item.title),"why_it_matters":"","project_stage":None,"related_ka":kas,"subsidiary":[],"country":overseas["country"],"region":overseas["region"],"opportunity_type":None,"schneider_product_opportunities":products,"recommended_sales_action":"核验项目状态并联系相关账户","evidence":overseas["overseas_evidence"],"uncertainty":["尚未经过人工审核"],"confidence":min(.98,max(overseas["overseas_confidence"],ka_conf))},

@@ -53,6 +53,18 @@ class ManualExtractRequest(BaseModel):
     import_type: Literal["wechat", "web"] = "wechat"
 
 
+class SchinzaBatchRequest(BaseModel):
+    filename: str = Field(min_length=5, max_length=255)
+    content_text: str = Field(min_length=2, max_length=5_000_000)
+    source_name: str = Field(min_length=2, max_length=200)
+
+
+class SchinzaBatchConfirm(SchinzaBatchRequest):
+    expected_file_sha256: str = Field(
+        min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+
+
 class SourceUpdate(BaseModel):
     enabled: bool | None = None
     schedule_minutes: int | None = Field(default=None, ge=15, le=10080)
